@@ -1,0 +1,225 @@
+﻿@page "/statistics"
+
+@using FinanceDashboard.Client.Authentication;
+@using System.Net.Http.Headers;
+@using System.Globalization;
+@using FinanceDashboard.Server.Model;
+@using FinanceDashboard.Shared.DTO;
+@using FinanceDashboard.Shared.Models;
+@using Newtonsoft.Json;
+
+@attribute [Authorize(Roles = "Customer")]
+
+@inject HttpClient Http
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject NavigationManager navManager
+@inject Radzen.NotificationService NotificationService
+
+<h1>Statistics</h1>
+<div Class="rz-p-0 rz-p-md-8">
+    <h4>Incomes</h4>
+    <RadzenCard Variant="Variant.Flat" class="mt-4 w-100 mb-4 d-flex align-items-center">
+        <RadzenLabel Text="Currency" Style="margin-right: 8px; vertical-align: middle;" />
+        <RadzenDropDown Change="@(async args => await UpdateIncomesChartData())" Data="@_availableCurrencies" TextProperty="Name" ValueProperty="Id" @bind-Value="@_incomesSelectedCurencyId" />
+        <RadzenLabel class="rz-ml-4" Text="Year" Style="margin-right: 8px; vertical-align: middle;" />
+        <RadzenDropDown Change="@(async args => await UpdateIncomesChartData())" Data="@_incomesAvailableYears" @bind-Value="@_incomesSelectedYear" />
+    </RadzenCard>
+    <RadzenChart>
+        <RadzenColumnSeries Fill="#95A4A8" Title="@_incomesChartName" Data="@_incomesChartData" CategoryProperty="Quarter" LineType="LineType.Dashed" ValueProperty="TotalAmount">
+            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+        </RadzenColumnSeries>
+        <RadzenColumnOptions Radius="5" />
+        <RadzenValueAxis  Min="0" Max="50000" Step="10000">
+            <RadzenGridLines Visible="true" />
+            <RadzenAxisTitle Text="@_incomesAxisTitle" />
+        </RadzenValueAxis>
+        <RadzenLegend Visible="false" />
+    </RadzenChart>
+    <br />
+
+    <h4>Expenses</h4>
+    <RadzenCard Variant="Variant.Flat" class="mt-4 w-100 mb-4 d-flex align-items-center">
+        <RadzenLabel Text="Currency" Style="margin-right: 8px; vertical-align: middle;" />
+        <RadzenDropDown Change="@(async args => await UpdateExpensesChartData())" Data="@_availableCurrencies" TextProperty="Name" ValueProperty="Id" @bind-Value="@_expensesSelectedCurencyId" />
+        <RadzenLabel class="rz-ml-4" Text="Year" Style="margin-right: 8px; vertical-align: middle;" />
+        <RadzenDropDown Change="@(async args => await UpdateExpensesChartData())" Data="@_expensesAvailableYears" @bind-Value="@_expensesSelectedYear" />
+    </RadzenCard>
+    <RadzenChart >
+        <RadzenColumnSeries Fill="#45494F" Title="@_expensesChartName" Data="@_expensesChartData" CategoryProperty="Quarter" LineType="LineType.Dashed" ValueProperty="TotalAmount">
+            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+        </RadzenColumnSeries>
+        <RadzenColumnOptions Radius="5" />
+        <RadzenValueAxis Min="0" Max="20000" Step="4000">
+            <RadzenGridLines Visible="true" />
+            <RadzenAxisTitle Text="@_expensesAxisTitle" />
+        </RadzenValueAxis>
+        <RadzenLegend Visible="false" />
+    </RadzenChart>
+</div>
+
+@code {
+
+    private string? _token = null;
+    private CustomAuthenticationStateProvider? _customAuthStateProvider = null;
+    private bool smooth = true;
+    private bool showDataLabels = false;
+    private List<ChartDataItem>? _incomesChartData = new List<ChartDataItem>();
+    private List<ChartDataItem>? _expensesChartData = new List<ChartDataItem>();
+
+    private List<Currency>? _availableCurrencies = null;
+    private List<int>? _incomesAvailableYears = null;
+    private List<int>? _expensesAvailableYears = null;
+
+    private string? _incomesChartName;
+    private string? _expensesChartName;
+    private string? _incomesAxisTitle;
+    private string? _expensesAxisTitle;
+    private int _incomesSelectedCurencyId = 1;
+    private int _expensesSelectedCurencyId = 1;
+    private string? _incomesSelectedCurrencyName;
+    private string? _expensesSelectedCurrencyName;
+    private int _incomesSelectedYear;
+    private int _expensesSelectedYear;
+
+    private async Task UpdateIncomesChartData()
+    {
+        var authState = await _customAuthStateProvider.GetAuthenticationStateAsync();
+        var currentUserLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
+        _incomesChartData = await GetFormattedIncomes(_incomesSelectedCurencyId, currentUserLogin, _incomesSelectedYear);
+        _incomesChartName = $"{_incomesSelectedYear}";
+        _incomesSelectedCurrencyName = _availableCurrencies.First(currency => currency.Id == _incomesSelectedCurencyId).Name;
+        _incomesAxisTitle = $"Income in {_incomesSelectedCurrencyName}";
+    }
+
+    private async Task UpdateExpensesChartData()
+    {
+        var authState = await _customAuthStateProvider.GetAuthenticationStateAsync();
+        var currentUserLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
+        _expensesChartData = await GetFormattedExpenses(_expensesSelectedCurencyId, currentUserLogin, _expensesSelectedYear);
+        _expensesChartName = $"{_expensesSelectedYear}";
+        _expensesSelectedCurrencyName = _availableCurrencies.First(currency => currency.Id == _expensesSelectedCurencyId).Name;
+        _expensesAxisTitle = $"Expense in {_expensesSelectedCurrencyName}";
+    }
+    
+    private async Task<List<ChartDataItem>> GetFormattedIncomes(int currencyId, string userLogin, int year)
+    {
+        string apiMethod = String.Empty;
+        switch (currencyId)
+        {
+            case 1:
+                apiMethod = "IncomesEUR";
+                break;
+            case 2:
+                apiMethod = "IncomesUSD";
+                break;
+            default:
+                break;
+        }
+        var incomesResponseMessage = await Http.PostAsJsonAsync($"/api/Statistic/{apiMethod}", new StatGetIncomesRequest { UserLogin = userLogin, CurrencyId = currencyId });
+        if (incomesResponseMessage.IsSuccessStatusCode)
+        {
+            var incomesResponseContent = await incomesResponseMessage.Content.ReadAsStringAsync();
+            var incomes = JsonConvert.DeserializeObject<List<StatisticData>>(incomesResponseContent);
+            return incomes.Where(income => income.Date.Year == year).GroupBy(item => new { Year = item.Date.Year, Quarter = (item.Date.Month + 2) / 3 }).Select(g => new ChartDataItem
+                {
+                    Quarter = $"Q{g.Key.Quarter}",
+                    TotalAmount = Decimal.Round(g.Sum(d => d.Amount))
+                }).ToList();
+        }
+        Console.WriteLine("GetFormattedIncomes outcome was not successfull");
+        return new List<ChartDataItem>();
+    }
+
+    private async Task<List<ChartDataItem>> GetFormattedExpenses(int currencyId, string userLogin, int year)
+    {
+        string apiMethod = String.Empty;
+        switch (currencyId)
+        {
+            case 1:
+                apiMethod = "ExpensesEUR";
+                break;
+            case 2:
+                apiMethod = "ExpensesUSD";
+                break;
+            default:
+                break;
+        }
+        var expensesResponseMessage = await Http.PostAsJsonAsync($"/api/Statistic/{apiMethod}", new StatGetExpensesRequest { UserLogin = userLogin, CurrencyId = currencyId });
+        if (expensesResponseMessage.IsSuccessStatusCode)
+        {
+            var expensesResponseContent = await expensesResponseMessage.Content.ReadAsStringAsync();
+            var expenses = JsonConvert.DeserializeObject<List<StatisticData>>(expensesResponseContent);
+            return expenses.Where(expense => expense.Date.Year == year).GroupBy(item => new { Year = item.Date.Year, Quarter = (item.Date.Month + 2) / 3 }).Select(g => new ChartDataItem
+                {
+                    Quarter = $"Q{g.Key.Quarter}",
+                    TotalAmount = Decimal.Round(g.Sum(d => d.Amount))
+                }).ToList();
+        }
+        Console.WriteLine("GetFormattedExpenses outcome was not successfull");
+        return new List<ChartDataItem>();
+    }
+   
+    private async Task<List<int>> GetYearsOfIncomes(string userLogin)
+    {
+        var incomesResponseMessage = await Http.PostAsJsonAsync($"/api/Statistic/IncomesEUR", new StatGetIncomesRequest { UserLogin = userLogin, CurrencyId = 1 });
+        if (incomesResponseMessage.IsSuccessStatusCode)
+        {
+            var incomesResponseContent = await incomesResponseMessage.Content.ReadAsStringAsync();
+            var incomes = JsonConvert.DeserializeObject<List<StatisticData>>(incomesResponseContent);
+            return incomes.Select(income => income.Date.Year).Distinct().OrderBy(year => year).ToList();
+        }
+        Console.WriteLine("Incomes years request was not successfull");
+        return new List<int>();
+    }
+    
+    private async Task<List<int>> GetYearsOfExpenses(string userLogin)
+    {
+        var expensesResponseMessage = await Http.PostAsJsonAsync($"/api/Statistic/ExpensesEUR", new StatGetExpensesRequest { UserLogin = userLogin, CurrencyId = 1 });
+        if (expensesResponseMessage.IsSuccessStatusCode)
+        {
+            var expensesResponseContent = await expensesResponseMessage.Content.ReadAsStringAsync();
+            var expenses = JsonConvert.DeserializeObject<List<StatisticData>>(expensesResponseContent);
+            return expenses.Select(income => income.Date.Year).Distinct().OrderBy(year => year).ToList();
+        }
+        Console.WriteLine("Expenses years request was not successfull");
+        return new List<int>();
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        _customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
+        _token = await _customAuthStateProvider.GetToken();
+        var authState = await _customAuthStateProvider.GetAuthenticationStateAsync();
+        var currentUserLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
+
+        if (!string.IsNullOrWhiteSpace(_token))
+        {
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", _token);
+            _incomesAvailableYears = await GetYearsOfIncomes(currentUserLogin);
+            _expensesAvailableYears = await GetYearsOfExpenses(currentUserLogin);
+            
+            _incomesSelectedYear = _incomesAvailableYears.Count != 0 ? _incomesAvailableYears.Last() : default;
+            _expensesSelectedYear = _expensesAvailableYears.Count != 0 ? _expensesAvailableYears.Last() : default;
+            
+            _incomesChartName = $"{_incomesSelectedYear}";
+            _expensesChartName = $"{_expensesSelectedYear}";
+
+            _incomesChartData = await GetFormattedIncomes(_incomesSelectedCurencyId, currentUserLogin, _incomesSelectedYear);
+            _expensesChartData = await GetFormattedExpenses(_expensesSelectedCurencyId, currentUserLogin, _expensesSelectedYear);
+            
+            _availableCurrencies = await Http.GetFromJsonAsync<List<Currency>>("/api/Currency");
+            _incomesSelectedCurrencyName = _availableCurrencies.First(currency => currency.Id == _incomesSelectedCurencyId).Name;
+            _expensesSelectedCurrencyName = _availableCurrencies.First(currency => currency.Id == _incomesSelectedCurencyId).Name;
+
+            _incomesAxisTitle = $"Income in {_incomesSelectedCurrencyName}";
+            _expensesAxisTitle = $"Expense in {_expensesSelectedCurrencyName}";
+        }
+        else
+        {
+            navManager.NavigateTo("/login");
+            return;
+        }
+    }
+}

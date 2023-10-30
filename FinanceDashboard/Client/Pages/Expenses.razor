@@ -1,0 +1,319 @@
+﻿@page "/expenses"
+@using FinanceDashboard.Shared.DTO;
+
+@attribute [Authorize(Roles = "Customer")]
+
+@using FinanceDashboard.Client.Authentication;
+@using FinanceDashboard.Server.Model;
+@using FinanceDashboard.Shared;
+@using System.Net.Http.Headers;
+@using FinanceDashboard.Shared.Models;
+@using Newtonsoft.Json;
+@using static System.Net.WebRequestMethods;
+@using System.Text.Json;
+@using System.ComponentModel.DataAnnotations;
+@using System.ComponentModel;
+@using Radzen;
+@using FinanceDashboard.Shared.DTO;
+
+@inject HttpClient Http
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject NavigationManager navManager
+@inject Radzen.NotificationService NotificationService
+
+
+<h1>Expenses</h1>
+
+<RadzenButton Style="margin-bottom:8px;" Visible="_visibleButton" ButtonStyle="ButtonStyle.Secondary" Shade="Shade.Dark" Text="Add Expense" Click="ShowForm"></RadzenButton>
+
+<div Class="rz-p-0 rz-p-md-12">
+    <RadzenTemplateForm TItem="AddExpenseRequest" Data=@model Submit=@OnSubmit Visible="_visibleForm">
+        <RadzenStack Gap="1rem" Class="rz-p-sm-12">
+            <RadzenFormField Text="Date" Variant="@variant">
+                <ChildContent>
+                    <RadzenDatePicker Name="Date" @bind-Value="@model.Date" />
+                </ChildContent>
+                <Helper>
+                    <RadzenRequiredValidator Component="Date" Text="Date is required." />
+                </Helper>
+            </RadzenFormField>
+
+            <RadzenFormField Text="Description" Variant="@variant">
+                <ChildContent>
+                    <RadzenTextBox Name="Description" @bind-Value="@model.Description" />
+                </ChildContent>
+            </RadzenFormField>
+
+            <RadzenFormField Text="Category" Variant="@variant">
+                <ChildContent>
+                    <RadzenDropDown Name="ExpenseCategory" @bind-Value="@model.ExpenseCategoryId" Data=@_availableCategories TextProperty="Name" ValueProperty="Id" />
+                </ChildContent>
+                <Helper>
+                    <RadzenCustomValidator Component="ExpenseCategory" Validator="@(() => ValidateCategoryId(model.ExpenseCategoryId))" Text="Category is required." />
+                </Helper>
+            </RadzenFormField>
+
+            <RadzenFormField Text="Amount" Variant="@variant">
+                <ChildContent>
+                    <RadzenNumeric ShowUpDown="false" Name="Amount" @bind-Value="@model.Amount" />
+                </ChildContent>
+                <Helper>
+                    <RadzenRequiredValidator Component="Amount" Text="Amount is required." />
+                </Helper>
+            </RadzenFormField>
+
+            <RadzenFormField Text="Currency" Variant="@variant">
+                <ChildContent>
+                    <RadzenDropDown Name="Currency" @bind-Value="@model.CurrencyId" Data=@_availableCurrencies TextProperty="Name" ValueProperty="Id" />
+                </ChildContent>
+                <Helper>
+                    <RadzenCustomValidator Component="Currency" Validator="@(() => ValidateCurrencyId(model.CurrencyId))" Text=" Currency is required." />
+                </Helper>
+
+            </RadzenFormField>
+            <RadzenButton ButtonStyle="ButtonStyle.Primary" Shade="Shade.Light" ButtonType="Radzen.ButtonType.Submit" Text="Submit"></RadzenButton>
+            <RadzenButton Click="CloseForm" ButtonStyle="ButtonStyle.Primary" Shade="Shade.Lighter" Text="Cancel"></RadzenButton>
+        </RadzenStack>
+    </RadzenTemplateForm>
+</div>
+
+<Table Responsive="true" DataSource="listOfData" TItem="ExpenseData" RowClassName="@(_=>"editable-row")" Bordered TableLayout="fixed">
+     <ChildContent Context="data">
+         <PropertyColumn  Property="c => c.Date" Title="Date" Sortable>
+            @if (!editCache[data.Id].edit)
+            {
+                @data.Date.ToString("D")
+            }
+            else
+            {
+                <DatePicker TValue="DateTime" Picker="@DatePickerType.Date" @bind-Value="editCache[data.Id].data.Date" />
+            }
+        </PropertyColumn>
+        <PropertyColumn  Property="c => c.Description" Title="Description">
+            @if (!editCache[data.Id].edit)
+            {
+                @data.Description
+            }
+            else
+            {
+                <Input @bind-Value="editCache[data.Id].data.Description" />
+            }
+        </PropertyColumn>
+        <PropertyColumn  Property="c => c.ExpenseCategory" Title="Category" Filters="_categoryFilters" FilterMultiple="false"
+                        OnFilter="(value,category)=>category.StartsWith(value)">
+            @if (!editCache[data.Id].edit)
+            {
+                @data.ExpenseCategory
+            }
+            else
+            {
+                <Select Mode="default"
+                        DataSource="_availableCategories"
+                @bind-Value="editCache[data.Id].data.ExpenseCategoryId"
+                        LabelName="@nameof(ExpenseCategory.Name)"
+                        ValueName="@nameof(ExpenseCategory.Id)">
+                </Select>
+            }
+        </PropertyColumn>
+        <PropertyColumn   Property="c => c.Amount" Title="Amount" Sortable>
+            @if (!editCache[data.Id].edit)
+            {
+                @data.Amount
+            }
+            else
+            {
+                <Input @bind-Value="editCache[data.Id].data.Amount" />
+            }
+        </PropertyColumn>
+        <PropertyColumn  Property="c => c.CurrencyName" Title="Currency" Filters="_currencyFilters" FilterMultiple="false"
+                        OnFilter="(value,currency)=>currency.StartsWith(value)">
+            @if (!editCache[data.Id].edit)
+            {
+                @data.CurrencyName
+            }
+            else
+            {
+                <Select Mode="default"
+                        DataSource="_availableCurrencies"
+                @bind-Value="editCache[data.Id].data.CurrencyId"
+                        LabelName="@nameof(Currency.Name)"
+                        ValueName="@nameof(Currency.Id)">
+                </Select>
+            }
+        </PropertyColumn>
+        <ActionColumn  Title="Action">
+            @if (!editCache[data.Id].edit)
+            {
+                <div style="display: flex; align-items: flex-end;">
+                    <span class="material-symbols-outlined" @onclick="() => StartEdit(data.Id)">
+                        edit
+                    </span>
+                    <Popconfirm Title="Sure to delete?"
+                                OnConfirm="() => DeleteRecord(data.Id)"
+                                OkText="Yes"
+                                CancelText="No">
+                        <span class="material-symbols-outlined" style="margin-left: 5px;">
+                            delete
+                        </span>
+                    </Popconfirm>
+
+                </div>
+            }
+            else
+            {
+                <span class="material-symbols-outlined" @onclick="() => SaveEdit(data.Id)">
+                    done
+                </span>
+                <Popconfirm Title="Sure to cancel?"
+                            OnConfirm="() => CancelEdit(data.Id)"
+                            OkText="Yes"
+                            CancelText="No">
+                    <span class="material-symbols-outlined">
+                        close
+                    </span>
+                </Popconfirm>
+            }
+        </ActionColumn>
+    </ChildContent>
+</Table>
+
+
+@code {
+
+    Variant variant = Variant.Outlined;
+
+    async Task OnSubmit(AddExpenseRequest model)
+    {
+        var authState = await customAuthStateProvider.GetAuthenticationStateAsync();
+        var currentUserLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
+        model.UserLogin = currentUserLogin;
+        var response  = await Http.PostAsJsonAsync("/api/Expense/Add", model);
+        if (response.IsSuccessStatusCode)
+        {
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly added", Duration = 4000 });
+        }
+        else
+        {
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Record wasn't successfuly added", Duration = 4000 });
+        }
+        CloseForm();
+    }
+
+    private bool ValidateCategoryId(int categoryId)
+    {
+        return categoryId != 0;
+    }
+    private bool ValidateCurrencyId(int currencyId)
+    {
+        return currencyId != 0;
+    }
+    private void ShowForm()
+    {
+        model = new AddExpenseRequest() { Description = "Some text" };
+        _visibleForm = true;
+        _visibleButton = false;
+    }
+    private void CloseForm()
+    {
+        _visibleForm = false;
+        _visibleButton = true;
+    }
+    private string? token = null;
+    private bool _visibleForm = false;
+    private bool _visibleButton = true;
+
+    private CustomAuthenticationStateProvider? customAuthStateProvider = null;
+    private List<ExpenseCategory>? _availableCategories = null;
+    private List<Currency>? _availableCurrencies = null;
+    private List<TableFilter<string>>? _categoryFilters = null;
+    private List<TableFilter<string>>? _currencyFilters = null;
+    private AddExpenseRequest model = new AddExpenseRequest() { Description = "Some text"};
+
+    private IDictionary<int, (bool edit, ExpenseData data)> editCache = new Dictionary<int, (bool edit, ExpenseData data)>();
+    private List<ExpenseData> listOfData = new();
+
+    private void StartEdit(int id)
+    {
+        var data = editCache[id];
+        editCache[id] = (true, data.data with { }); // add a copy in cache
+    }
+
+    private void CancelEdit(int id)
+    {
+        var data = listOfData.FirstOrDefault(item => item.Id == id);
+        editCache[id] = (false, data); // recovery
+    }
+
+    private async Task SaveEdit(int id)
+    {
+        editCache[id].data.ExpenseCategory = _availableCategories?.First(category => category.Id == editCache[id].data.ExpenseCategoryId).Name;
+        editCache[id].data.CurrencyName = _availableCurrencies?.First(currency => currency.Id == editCache[id].data.CurrencyId).Name;
+        var index = listOfData.FindIndex(item => item.Id == id);
+        var updatedExpense = editCache[id].data;
+
+        var response = await Http.PutAsJsonAsync("/api/Expense", updatedExpense);
+        if (response.IsSuccessStatusCode)
+        {
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly updated", Duration = 4000 });
+            listOfData[index] = editCache[id].data; // apply the copy to data source
+            editCache[id] = (false, listOfData[index]); // don't affect rows in editing
+        }
+        else
+        {
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Record wasn't successfuly updated", Duration = 4000 });
+            CancelEdit(id);
+        }
+    }
+
+    private async Task DeleteRecord(int id)
+    {
+        var expenseToDelete = listOfData.First(item => item.Id == id);
+        var index = expenseToDelete.Id;
+        var response = await Http.PostAsJsonAsync($"/api/Expense/Remove", new DeleteExpenseRequest { ExpenseId = index });
+        if (response.IsSuccessStatusCode)
+        {
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly removed", Duration = 4000 });
+            editCache.Remove(id);
+            listOfData.Remove(expenseToDelete);
+        }
+        else
+        {
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Record wasn't successfuly removed", Duration = 4000 });
+            //show error side message
+        }
+    }
+
+    private void ShowNotification(NotificationMessage message)
+    {
+        NotificationService.Notify(message);
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
+        token = await customAuthStateProvider.GetToken();
+        var authState = await customAuthStateProvider.GetAuthenticationStateAsync();
+        var currentUserLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
+        List<Expense>? userExpenses;
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token);
+            GetExpensesRequest requestoObj = new GetExpensesRequest { UserLogin = currentUserLogin };
+            var expensesRequestResponse = await Http.PostAsJsonAsync("/api/Expense", requestoObj);
+            var expensesResponseContent = await expensesRequestResponse.Content.ReadAsStringAsync();
+            listOfData = JsonConvert.DeserializeObject<List<ExpenseData>>(expensesResponseContent);
+            _availableCategories = await Http.GetFromJsonAsync<List<ExpenseCategory>>("/api/Expense/Categories");
+            _availableCurrencies = await Http.GetFromJsonAsync<List<Currency>>("/api/Currency");
+            listOfData.ForEach(item =>
+            {
+                editCache[item.Id] = (false, item);
+            });
+            _categoryFilters = _availableCategories.Select(category => new TableFilter<string>() { Text = category.Name, Value = category.Name }).ToList();
+            _currencyFilters = _availableCurrencies.Select(category => new TableFilter<string>() { Text = category.Name, Value = category.Name }).ToList();
+        }
+        else
+        {
+            navManager.NavigateTo("/login");
+            return;
+        }
+    }
+}
