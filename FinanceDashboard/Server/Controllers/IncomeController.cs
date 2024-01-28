@@ -1,6 +1,6 @@
 ﻿using FinanceDashboard.Server.Data;
 using FinanceDashboard.Server.Model;
-using FinanceDashboard.Shared.DTO;
+using FinanceDashboard.Shared.DTO.Income;
 using FinanceDashboard.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;

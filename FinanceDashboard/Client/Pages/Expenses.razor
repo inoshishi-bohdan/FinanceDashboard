@@ -1,8 +1,7 @@
 ﻿@page "/expenses"
-@using FinanceDashboard.Shared.DTO;
-
 @attribute [Authorize(Roles = "Customer")]
 
+@using FinanceDashboard.Shared.DTO;
 @using FinanceDashboard.Client.Authentication;
 @using FinanceDashboard.Server.Model;
 @using FinanceDashboard.Shared;
@@ -14,7 +13,7 @@
 @using System.ComponentModel.DataAnnotations;
 @using System.ComponentModel;
 @using Radzen;
-@using FinanceDashboard.Shared.DTO;
+@using FinanceDashboard.Shared.DTO.Expense;
 
 @inject HttpClient Http
 @inject AuthenticationStateProvider authenticationStateProvider
@@ -24,11 +23,11 @@
 
 <h1>Expenses</h1>
 
-<RadzenButton Style="margin-bottom:8px;" Visible="_visibleButton" ButtonStyle="ButtonStyle.Secondary" Shade="Shade.Dark" Text="Add Expense" Click="ShowForm"></RadzenButton>
+<RadzenButton Style="margin-bottom:8px; margin-top:5px;" Visible="_visibleButton" ButtonStyle="ButtonStyle.Secondary" Shade="Shade.Dark" Text="Add Expense" Click="ShowForm"></RadzenButton>
 
-<div Class="rz-p-0 rz-p-md-12">
-    <RadzenTemplateForm TItem="AddExpenseRequest" Data=@model Submit=@OnSubmit Visible="_visibleForm">
-        <RadzenStack Gap="1rem" Class="rz-p-sm-12">
+<div class="add-record-form">
+    <RadzenTemplateForm TItem="CreateRequest" Data=@model Submit=@OnSubmit Visible="_visibleForm">
+        <RadzenStack Gap="1rem" Class="rz-px-0 rz-py-12">
             <RadzenFormField Text="Date" Variant="@variant">
                 <ChildContent>
                     <RadzenDatePicker Name="Date" @bind-Value="@model.Date" />
@@ -46,7 +45,7 @@
 
             <RadzenFormField Text="Category" Variant="@variant">
                 <ChildContent>
-                    <RadzenDropDown Name="ExpenseCategory" @bind-Value="@model.ExpenseCategoryId" Data=@_availableCategories TextProperty="Name" ValueProperty="Id" />
+                    <RadzenDropDown Name="ExpenseCategory" @bind-Value="@model.ExpenseCategoryId" Data=@categories TextProperty="Name" ValueProperty="Id" />
                 </ChildContent>
                 <Helper>
                     <RadzenCustomValidator Component="ExpenseCategory" Validator="@(() => ValidateCategoryId(model.ExpenseCategoryId))" Text="Category is required." />
@@ -64,7 +63,7 @@
 
             <RadzenFormField Text="Currency" Variant="@variant">
                 <ChildContent>
-                    <RadzenDropDown Name="Currency" @bind-Value="@model.CurrencyId" Data=@_availableCurrencies TextProperty="Name" ValueProperty="Id" />
+                    <RadzenDropDown Name="Currency" @bind-Value="@model.CurrencyId" Data=@currencies TextProperty="Name" ValueProperty="Id" />
                 </ChildContent>
                 <Helper>
                     <RadzenCustomValidator Component="Currency" Validator="@(() => ValidateCurrencyId(model.CurrencyId))" Text=" Currency is required." />
@@ -79,7 +78,7 @@
 
 <Table Responsive="true" DataSource="listOfData" TItem="ExpenseData" RowClassName="@(_=>"editable-row")" Bordered TableLayout="fixed">
      <ChildContent Context="data">
-         <PropertyColumn  Property="c => c.Date" Title="Date" Sortable>
+         <PropertyColumn Property="c => c.Date" Title="Date" Sortable>
             @if (!editCache[data.Id].edit)
             {
                 @data.Date.ToString("D")
@@ -89,7 +88,7 @@
                 <DatePicker TValue="DateTime" Picker="@DatePickerType.Date" @bind-Value="editCache[data.Id].data.Date" />
             }
         </PropertyColumn>
-        <PropertyColumn  Property="c => c.Description" Title="Description">
+        <PropertyColumn Property="c => c.Description" Title="Description">
             @if (!editCache[data.Id].edit)
             {
                 @data.Description
@@ -99,8 +98,8 @@
                 <Input @bind-Value="editCache[data.Id].data.Description" />
             }
         </PropertyColumn>
-        <PropertyColumn  Property="c => c.ExpenseCategory" Title="Category" Filters="_categoryFilters" FilterMultiple="false"
-                        OnFilter="(value,category)=>category.StartsWith(value)">
+        <PropertyColumn Property="c => c.ExpenseCategory" Title="Category" Filters="_categoryFilters!" FilterMultiple="false"
+                        OnFilter="(value,category)=>category!.StartsWith(value!)">
             @if (!editCache[data.Id].edit)
             {
                 @data.ExpenseCategory
@@ -108,14 +107,14 @@
             else
             {
                 <Select Mode="default"
-                        DataSource="_availableCategories"
+                        DataSource="categories"
                 @bind-Value="editCache[data.Id].data.ExpenseCategoryId"
                         LabelName="@nameof(ExpenseCategory.Name)"
                         ValueName="@nameof(ExpenseCategory.Id)">
                 </Select>
             }
         </PropertyColumn>
-        <PropertyColumn   Property="c => c.Amount" Title="Amount" Sortable>
+        <PropertyColumn Property="c => c.Amount" Title="Amount" Sortable>
             @if (!editCache[data.Id].edit)
             {
                 @data.Amount
@@ -125,8 +124,8 @@
                 <Input @bind-Value="editCache[data.Id].data.Amount" />
             }
         </PropertyColumn>
-        <PropertyColumn  Property="c => c.CurrencyName" Title="Currency" Filters="_currencyFilters" FilterMultiple="false"
-                        OnFilter="(value,currency)=>currency.StartsWith(value)">
+        <PropertyColumn Property="c => c.CurrencyName" Title="Currency" Filters="_currencyFilters!" FilterMultiple="false"
+                        OnFilter="(value,currency)=>currency!.StartsWith(value!)">
             @if (!editCache[data.Id].edit)
             {
                 @data.CurrencyName
@@ -134,14 +133,14 @@
             else
             {
                 <Select Mode="default"
-                        DataSource="_availableCurrencies"
+                        DataSource="currencies"
                 @bind-Value="editCache[data.Id].data.CurrencyId"
                         LabelName="@nameof(Currency.Name)"
                         ValueName="@nameof(Currency.Id)">
                 </Select>
             }
         </PropertyColumn>
-        <ActionColumn  Title="Action">
+        <ActionColumn Title="Action">
             @if (!editCache[data.Id].edit)
             {
                 <div style="display: flex; align-items: flex-end;">
@@ -182,12 +181,35 @@
 
     Variant variant = Variant.Outlined;
 
-    async Task OnSubmit(AddExpenseRequest model)
+    private CustomAuthenticationStateProvider? customAuthStateProvider = null;
+
+    private bool _visibleForm = false;
+    private bool _visibleButton = true;
+
+    private List<ExpenseCategory>? categories = null;
+    private List<Currency>? currencies = null;
+    private List<TableFilter<string>>? _categoryFilters = null;
+    private List<TableFilter<string>>? _currencyFilters = null;
+    private IDictionary<int, (bool edit, ExpenseData data)> editCache = new Dictionary<int, (bool edit, ExpenseData data)>();
+    private List<ExpenseData>? listOfData = new();
+
+    private CreateRequest model = new CreateRequest() { Description = "Some text"};
+
+    private bool ValidateCategoryId(int categoryId)
     {
-        var authState = await customAuthStateProvider.GetAuthenticationStateAsync();
+        return categoryId != 0;
+    }
+    private bool ValidateCurrencyId(int currencyId)
+    {
+        return currencyId != 0;
+    }
+
+    private async Task OnSubmit(CreateRequest model)
+    {
+        var authState = await customAuthStateProvider!.GetAuthenticationStateAsync();
         var currentUserLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
         model.UserLogin = currentUserLogin;
-        var response  = await Http.PostAsJsonAsync("/api/Expense/Add", model);
+        var response  = await Http.PostAsJsonAsync("api/expense/create", model);
         if (response.IsSuccessStatusCode)
         {
             ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly added", Duration = 4000 });
@@ -199,39 +221,6 @@
         CloseForm();
     }
 
-    private bool ValidateCategoryId(int categoryId)
-    {
-        return categoryId != 0;
-    }
-    private bool ValidateCurrencyId(int currencyId)
-    {
-        return currencyId != 0;
-    }
-    private void ShowForm()
-    {
-        model = new AddExpenseRequest() { Description = "Some text" };
-        _visibleForm = true;
-        _visibleButton = false;
-    }
-    private void CloseForm()
-    {
-        _visibleForm = false;
-        _visibleButton = true;
-    }
-    private string? token = null;
-    private bool _visibleForm = false;
-    private bool _visibleButton = true;
-
-    private CustomAuthenticationStateProvider? customAuthStateProvider = null;
-    private List<ExpenseCategory>? _availableCategories = null;
-    private List<Currency>? _availableCurrencies = null;
-    private List<TableFilter<string>>? _categoryFilters = null;
-    private List<TableFilter<string>>? _currencyFilters = null;
-    private AddExpenseRequest model = new AddExpenseRequest() { Description = "Some text"};
-
-    private IDictionary<int, (bool edit, ExpenseData data)> editCache = new Dictionary<int, (bool edit, ExpenseData data)>();
-    private List<ExpenseData> listOfData = new();
-
     private void StartEdit(int id)
     {
         var data = editCache[id];
@@ -240,21 +229,24 @@
 
     private void CancelEdit(int id)
     {
-        var data = listOfData.FirstOrDefault(item => item.Id == id);
+        var data = listOfData!.First(item => item.Id == id);
         editCache[id] = (false, data); // recovery
     }
 
     private async Task SaveEdit(int id)
     {
-        editCache[id].data.ExpenseCategory = _availableCategories?.First(category => category.Id == editCache[id].data.ExpenseCategoryId).Name;
-        editCache[id].data.CurrencyName = _availableCurrencies?.First(currency => currency.Id == editCache[id].data.CurrencyId).Name;
-        var index = listOfData.FindIndex(item => item.Id == id);
-        var updatedExpense = editCache[id].data;
+        editCache[id].data.ExpenseCategory = categories!.First(category => category.Id == editCache[id].data.ExpenseCategoryId).Name;
+        editCache[id].data.CurrencyName = currencies!.First(currency => currency.Id == editCache[id].data.CurrencyId).Name;
 
-        var response = await Http.PutAsJsonAsync("/api/Expense", updatedExpense);
+        var index = listOfData!.FindIndex(item => item.Id == id);
+        var expenseRecord = editCache[id].data;
+
+        var response = await Http.PutAsJsonAsync("api/expense/change", expenseRecord);
+
         if (response.IsSuccessStatusCode)
         {
             ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly updated", Duration = 4000 });
+
             listOfData[index] = editCache[id].data; // apply the copy to data source
             editCache[id] = (false, listOfData[index]); // don't affect rows in editing
         }
@@ -267,19 +259,22 @@
 
     private async Task DeleteRecord(int id)
     {
-        var expenseToDelete = listOfData.First(item => item.Id == id);
-        var index = expenseToDelete.Id;
-        var response = await Http.PostAsJsonAsync($"/api/Expense/Remove", new DeleteExpenseRequest { ExpenseId = index });
+        var expenseRecord = listOfData!.First(item => item.Id == id);
+        var index = expenseRecord.Id;
+
+        var response = await Http.PostAsJsonAsync($"api/expense/delete", new DeleteRequest { Id = index });
+
         if (response.IsSuccessStatusCode)
         {
             ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly removed", Duration = 4000 });
+
             editCache.Remove(id);
-            listOfData.Remove(expenseToDelete);
+
+            listOfData!.Remove(expenseRecord!);
         }
         else
         {
             ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Record wasn't successfuly removed", Duration = 4000 });
-            //show error side message
         }
     }
 
@@ -287,28 +282,47 @@
     {
         NotificationService.Notify(message);
     }
+
+    private void ShowForm()
+    {
+        model = new CreateRequest() { Description = "Some text" };
+        _visibleForm = true;
+        _visibleButton = false;
+    }
+
+    private void CloseForm()
+    {
+        _visibleForm = false;
+        _visibleButton = true;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
-        token = await customAuthStateProvider.GetToken();
+        var token = await customAuthStateProvider.GetToken();
         var authState = await customAuthStateProvider.GetAuthenticationStateAsync();
-        var currentUserLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
-        List<Expense>? userExpenses;
+        var userLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
+
         if (!string.IsNullOrWhiteSpace(token))
         {
             Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token);
-            GetExpensesRequest requestoObj = new GetExpensesRequest { UserLogin = currentUserLogin };
-            var expensesRequestResponse = await Http.PostAsJsonAsync("/api/Expense", requestoObj);
-            var expensesResponseContent = await expensesRequestResponse.Content.ReadAsStringAsync();
-            listOfData = JsonConvert.DeserializeObject<List<ExpenseData>>(expensesResponseContent);
-            _availableCategories = await Http.GetFromJsonAsync<List<ExpenseCategory>>("/api/Expense/Categories");
-            _availableCurrencies = await Http.GetFromJsonAsync<List<Currency>>("/api/Currency");
-            listOfData.ForEach(item =>
+            GetListRequest request = new GetListRequest { UserLogin = userLogin };
+
+            var response = await Http.PostAsJsonAsync("api/expense/list", request);
+            var content = await response.Content.ReadAsStringAsync();
+
+            listOfData = JsonConvert.DeserializeObject<List<ExpenseData>>(content);
+
+            categories = await Http.GetFromJsonAsync<List<ExpenseCategory>>("api/expense/categories")!;
+            currencies = await Http.GetFromJsonAsync<List<Currency>>("api/currency/list")!;
+
+            listOfData?.ForEach(item =>
             {
                 editCache[item.Id] = (false, item);
             });
-            _categoryFilters = _availableCategories.Select(category => new TableFilter<string>() { Text = category.Name, Value = category.Name }).ToList();
-            _currencyFilters = _availableCurrencies.Select(category => new TableFilter<string>() { Text = category.Name, Value = category.Name }).ToList();
+
+            _categoryFilters = categories?.Select(category => new TableFilter<string>() { Text = category.Name, Value = category.Name }).ToList();
+            _currencyFilters = currencies?.Select(category => new TableFilter<string>() { Text = category.Name, Value = category.Name }).ToList();
         }
         else
         {

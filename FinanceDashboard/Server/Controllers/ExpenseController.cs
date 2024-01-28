@@ -1,15 +1,14 @@
 ﻿using FinanceDashboard.Server.Data;
 using FinanceDashboard.Server.Model;
-using FinanceDashboard.Shared.DTO;
+using FinanceDashboard.Shared.DTO.Expense;
 using FinanceDashboard.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinanceDashboard.Server.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/expense")]
     [ApiController]
     public class ExpenseController : ControllerBase
     {
@@ -20,19 +19,18 @@ namespace FinanceDashboard.Server.Controllers
             _financeDashboardContext = financeDashboardContext;
         }
 
-        [HttpGet]
-        [Route("Categories")]
+        [HttpGet("categories")]
         [Authorize(Roles = "Customer")]
         public async Task<List<ExpenseCategory>> GetExpenseCategories()
         {
             return await _financeDashboardContext.ExpenseCategories.ToListAsync();
         }
 
-        [HttpPost]
+        [HttpPost("list")]
         [Authorize(Roles = "Customer")]
-        public async Task<List<ExpenseData>> GetUserExpensesAsync([FromBody] GetExpensesRequest expensesRequest)
+        public async Task<List<ExpenseData>> GetUserExpensesAsync([FromBody] GetListRequest request)
         {
-            return await _financeDashboardContext.Expenses.AsQueryable().Where(expense => expense.User.Login.Equals(expensesRequest.UserLogin))
+            return await _financeDashboardContext.Expenses.AsQueryable().Where(expense => expense.User.Login == request.UserLogin)
                 .Include(expense => expense.ExpenseCategory)
                 .Include(expense => expense.Currency).Select(expense => new ExpenseData
                 {
@@ -47,44 +45,49 @@ namespace FinanceDashboard.Server.Controllers
                 }).ToListAsync();
         }
 
-        [HttpPut]
+        [HttpPut("change")]
         [Authorize(Roles = "Customer")]
         public async Task UpdateExpenseAsync([FromBody] ExpenseData expenseData)
         {
-            var expenseToUpdate = await _financeDashboardContext.Expenses.AsQueryable().FirstAsync(expense => expense.Id == expenseData.Id);
-            expenseToUpdate.Date = expenseData.Date;
-            expenseToUpdate.Description = expenseData.Description;
-            expenseToUpdate.Amount = expenseData.Amount;
-            expenseToUpdate.CurrencyId = expenseData.CurrencyId;
-            expenseToUpdate.ExpenseCategoryId = expenseData.ExpenseCategoryId;
+            var expenseRecord = await _financeDashboardContext.Expenses.AsQueryable().FirstAsync(expense => expense.Id == expenseData.Id);
+            expenseRecord.Date = expenseData.Date;
+            expenseRecord.Description = expenseData.Description;
+            expenseRecord.Amount = expenseData.Amount;
+            expenseRecord.CurrencyId = expenseData.CurrencyId;
+            expenseRecord.ExpenseCategoryId = expenseData.ExpenseCategoryId;
+            
             await _financeDashboardContext.SaveChangesAsync();
         }
 
-        [HttpPost]
-        [Route("Remove")]
+        [HttpPost("delete")]
         [Authorize(Roles = "Customer")]
-        public async Task DeleteExpenseAsync([FromBody] DeleteExpenseRequest deleteExpenseRequest)
+        public async Task DeleteExpenseAsync([FromBody] DeleteRequest request)
         {
-            var expenseToDelete = await _financeDashboardContext.Expenses.AsQueryable().FirstAsync(expense => expense.Id == deleteExpenseRequest.ExpenseId);
-            _financeDashboardContext.Expenses.Remove(expenseToDelete);
+            var expenseRecord = await _financeDashboardContext.Expenses.AsQueryable().FirstAsync(expense => expense.Id == request.Id);
+            
+            _financeDashboardContext.Expenses.Remove(expenseRecord);
+            
             await _financeDashboardContext.SaveChangesAsync();
         }
-        [HttpPost]
-        [Route("Add")]
+
+        [HttpPost("create")]
         [Authorize(Roles = "Customer")]
-        public async Task AddExpenseAsync([FromBody] AddExpenseRequest addExpenseRequest)
+        public async Task AddExpenseAsync([FromBody] CreateRequest request)
         {
-            var userId = _financeDashboardContext.Users.First(user => user.Login.Equals(addExpenseRequest.UserLogin)).Id;
-            var newExpense = new Expense()
+            var userId = (await _financeDashboardContext.Users.AsQueryable().FirstAsync(user => user.Login.Equals(request.UserLogin))).Id;
+            
+            var expenseRecord = new Expense()
             {
                 UserId = userId,
-                Date = addExpenseRequest.Date,
-                Description = addExpenseRequest.Description,
-                Amount = addExpenseRequest.Amount,
-                ExpenseCategoryId = addExpenseRequest.ExpenseCategoryId,
-                CurrencyId = addExpenseRequest.CurrencyId
+                Date = request.Date,
+                Description = request.Description,
+                Amount = request.Amount,
+                ExpenseCategoryId = request.ExpenseCategoryId,
+                CurrencyId = request.CurrencyId
             };
-            _financeDashboardContext.Expenses.Add(newExpense);
+
+            _financeDashboardContext.Expenses.Add(expenseRecord);
+            
             await _financeDashboardContext.SaveChangesAsync();
         }
     }

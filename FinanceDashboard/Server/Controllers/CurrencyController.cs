@@ -1,13 +1,12 @@
 ﻿using FinanceDashboard.Server.Data;
 using FinanceDashboard.Server.Model;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinanceDashboard.Server.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/currency")]
     [ApiController]
     public class CurrencyController : ControllerBase
     {
@@ -17,7 +16,7 @@ namespace FinanceDashboard.Server.Controllers
         {
             _financeDashboardContext = financeDashboardContext;
         }
-        [HttpGet]
+        [HttpGet("list")]
         [Authorize(Roles = "Customer")]
         public async Task<List<Currency>> GetCurrenciesAsync()
         {

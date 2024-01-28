@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FinanceDashboard.Shared.DTO
+namespace FinanceDashboard.Shared.DTO.Income
 {
-    public  class UpdateIncomeRequest
+    public class UpdateIncomeRequest
     {
         public int IncomeId { get; set; }
         public DateTime Date { get; set; }

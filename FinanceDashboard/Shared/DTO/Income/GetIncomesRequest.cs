@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FinanceDashboard.Shared.DTO
+namespace FinanceDashboard.Shared.DTO.Income
 {
-    public class GetExpensesRequest
+    public class GetIncomesRequest
     {
-        public string? UserLogin { get; set; }
+        public string UserLogin { get; set; }
     }
 }
