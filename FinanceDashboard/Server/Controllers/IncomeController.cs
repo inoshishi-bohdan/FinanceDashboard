@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FinanceDashboard.Server.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/income")]
     [ApiController]
     public class IncomeController : ControllerBase
     {
@@ -21,11 +21,11 @@ namespace FinanceDashboard.Server.Controllers
         }
 
 
-        [HttpPost]
+        [HttpPost("list")]
         [Authorize(Roles = "Customer")]
-        public async Task<List<IncomeData>> GetUserIncomesAsync([FromBody] GetIncomesRequest getIncomesRequest)
+        public async Task<List<IncomeData>> GetUserIncomesAsync([FromBody] GetListRequest request)
         {
-            return await _financeDashboardContext.Incomes.AsQueryable().Where(income => income.User.Login.Equals(getIncomesRequest.UserLogin))
+            return await _financeDashboardContext.Incomes.AsQueryable().Where(income => income.User.Login.Equals(request.UserLogin))
                 .Include(income => income.Currency).Select(income => new IncomeData 
                 { 
                     Id = income.Id,
@@ -37,42 +37,46 @@ namespace FinanceDashboard.Server.Controllers
                 }).ToListAsync();
         }
 
-        [HttpPut]
+        [HttpPut("change")]
         [Authorize(Roles = "Customer")]
         public async Task UpdateIncomeAsync([FromBody] IncomeData incomeData)
         {
-            var incomeToUpdate = await _financeDashboardContext.Incomes.AsQueryable().FirstAsync(income => income.Id == incomeData.Id);
-            incomeToUpdate.Date = incomeData.Date;
-            incomeToUpdate.Description = incomeData.Description;
-            incomeToUpdate.Amount = incomeData.Amount;
-            incomeToUpdate.CurrencyId = incomeData.CurrencyId;
+            var incomeRecord = await _financeDashboardContext.Incomes.AsQueryable().FirstAsync(income => income.Id == incomeData.Id);           
+            incomeRecord.Date = incomeData.Date;
+            incomeRecord.Description = incomeData.Description;
+            incomeRecord.Amount = incomeData.Amount;
+            incomeRecord.CurrencyId = incomeData.CurrencyId;
+            
             await _financeDashboardContext.SaveChangesAsync();
         }
 
-        [HttpPost]
-        [Route("Remove")]
+        [HttpPost("remove")]
         [Authorize(Roles = "Customer")]
-        public async Task DeleteIncomeAsync([FromBody] DeleteIncomeRequest deleteIncomeRequest)
+        public async Task DeleteIncomeAsync([FromBody] DeleteRequest request)
         {
-            var incomeToDelete = await _financeDashboardContext.Incomes.AsQueryable().FirstAsync(income => income.Id == deleteIncomeRequest.IncomeId);
-            _financeDashboardContext.Incomes.Remove(incomeToDelete);
+            var incomeRecord = await _financeDashboardContext.Incomes.AsQueryable().FirstAsync(income => income.Id == request.Id);
+            
+            _financeDashboardContext.Incomes.Remove(incomeRecord);
+            
             await _financeDashboardContext.SaveChangesAsync();
         }
-        [HttpPost]
-        [Route("Add")]
+        [HttpPost("create")]
         [Authorize(Roles = "Customer")]
-        public async Task AddIncomeAsync([FromBody] AddIncomeRequest addIncomeRequest)
+        public async Task AddIncomeAsync([FromBody] CreateRequest request)
         {
-            var userId = _financeDashboardContext.Users.First(user => user.Login.Equals(addIncomeRequest.UserLogin)).Id;
-            var newIncome = new Income()
+            var userId = (await _financeDashboardContext.Users.AsQueryable().FirstAsync(user => user.Login.Equals(request.UserLogin))).Id;
+            
+            var incomeRecord = new Income()
             {
                 UserId = userId,
-                Date = addIncomeRequest.Date,
-                Description = addIncomeRequest.Description,
-                Amount = addIncomeRequest.Amount,
-                CurrencyId = addIncomeRequest.CurrencyId
+                Date = request.Date,
+                Description = request.Description,
+                Amount = request.Amount,
+                CurrencyId = request.CurrencyId
             };
-            _financeDashboardContext.Incomes.Add(newIncome);
+
+            _financeDashboardContext.Incomes.Add(incomeRecord);
+            
             await _financeDashboardContext.SaveChangesAsync();
         }
     }

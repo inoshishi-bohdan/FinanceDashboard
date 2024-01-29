@@ -8,7 +8,6 @@
 @using System.Net.Http.Headers;
 @using FinanceDashboard.Shared.Models;
 @using Newtonsoft.Json;
-@using static System.Net.WebRequestMethods;
 @using System.Text.Json;
 @using System.ComponentModel.DataAnnotations;
 @using System.ComponentModel;
@@ -210,6 +209,7 @@
         var currentUserLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
         model.UserLogin = currentUserLogin;
         var response  = await Http.PostAsJsonAsync("api/expense/create", model);
+        
         if (response.IsSuccessStatusCode)
         {
             ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly added", Duration = 4000 });
@@ -218,6 +218,7 @@
         {
             ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Record wasn't successfuly added", Duration = 4000 });
         }
+        
         CloseForm();
     }
 
@@ -298,6 +299,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
+
         customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
         var token = await customAuthStateProvider.GetToken();
         var authState = await customAuthStateProvider.GetAuthenticationStateAsync();
