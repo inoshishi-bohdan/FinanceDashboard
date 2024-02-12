@@ -1,8 +1,7 @@
 ﻿namespace FinanceDashboard.Shared.DTO.Expense
 {
-    public class StatGetExpensesRequest
+    public class GetExpensesYearsRequest
     {
         public string? UserLogin { get; set; }
-        public int CurrencyId { get; set; }
     }
 }

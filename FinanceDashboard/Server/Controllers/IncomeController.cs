@@ -3,7 +3,6 @@ using FinanceDashboard.Server.Model;
 using FinanceDashboard.Shared.DTO.Income;
 using FinanceDashboard.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,61 +22,121 @@ namespace FinanceDashboard.Server.Controllers
 
         [HttpPost("list")]
         [Authorize(Roles = "Customer")]
-        public async Task<List<IncomeData>> GetUserIncomesAsync([FromBody] GetListRequest request)
+        [ProducesResponseType(typeof(List<IncomeData>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetUserIncomesAsync([FromBody] GetListRequest request)
         {
-            return await _financeDashboardContext.Incomes.AsQueryable().Where(income => income.User.Login.Equals(request.UserLogin))
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            var result = await _financeDashboardContext.Incomes.AsQueryable().Where(income => income.User.Login.Equals(request.UserLogin))
                 .Include(income => income.Currency).Select(income => new IncomeData 
                 { 
                     Id = income.Id,
                     Date = income.Date,
                     Description = income.Description,
-                    CurrencyName = income.Currency.Name,
+                    Currency = income.Currency.Name,
                     CurrencyId = income.CurrencyId,
                     Amount = income.Amount
                 }).ToListAsync();
+
+            return Ok(result);
         }
 
-        [HttpPut("change")]
+        [HttpPost("update")]
         [Authorize(Roles = "Customer")]
-        public async Task UpdateIncomeAsync([FromBody] IncomeData incomeData)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateIncomeAsync([FromBody] UpdateRequest request)
         {
-            var incomeRecord = await _financeDashboardContext.Incomes.AsQueryable().FirstAsync(income => income.Id == incomeData.Id);           
-            incomeRecord.Date = incomeData.Date;
-            incomeRecord.Description = incomeData.Description;
-            incomeRecord.Amount = incomeData.Amount;
-            incomeRecord.CurrencyId = incomeData.CurrencyId;
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.Id)
+                .FieldIsRequired(x => x.Date)
+                .FieldIsRequired(x => x.Amount)
+                .FieldIsRequired(x => x.CurrencyId);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            if (request.Amount <= 0) return BadRequest($"Amount can not be equal to 0 or less");
+
+            var incomeRecord = await _financeDashboardContext.Incomes.AsQueryable().FirstAsync(income => income.Id == request.Id);
+
+            if (incomeRecord == null) return BadRequest($"Income record not found (id = {request.Id})");
+
+            incomeRecord.Date = request.Date!.Value;
+            incomeRecord.Description = request.Description;
+            incomeRecord.Amount = request.Amount!.Value;
+            incomeRecord.CurrencyId = request.CurrencyId!.Value;
             
             await _financeDashboardContext.SaveChangesAsync();
+
+            return Ok();
         }
 
-        [HttpPost("remove")]
+        [HttpPost("delete")]
         [Authorize(Roles = "Customer")]
-        public async Task DeleteIncomeAsync([FromBody] DeleteRequest request)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> DeleteIncomeAsync([FromBody] DeleteRequest request)
         {
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.Id);
+
+            if (validator.Any()) return validator.BadRequest();
+
             var incomeRecord = await _financeDashboardContext.Incomes.AsQueryable().FirstAsync(income => income.Id == request.Id);
-            
+
+            if (incomeRecord == null) return BadRequest($"Income record not found (id = {request.Id})");
+
             _financeDashboardContext.Incomes.Remove(incomeRecord);
             
             await _financeDashboardContext.SaveChangesAsync();
+
+            return Ok();
         }
+
         [HttpPost("create")]
         [Authorize(Roles = "Customer")]
-        public async Task AddIncomeAsync([FromBody] CreateRequest request)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateIncomeAsync([FromBody] CreateRequest request)
         {
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin)
+                .FieldIsRequired(x => x.Date)
+                .FieldIsRequired(x => x.Amount)
+                .FieldIsRequired(x => x.CurrencyId);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            if (request.Amount <= 0) return BadRequest($"Amount can not be equal to 0 or less");
+
             var userId = (await _financeDashboardContext.Users.AsQueryable().FirstAsync(user => user.Login.Equals(request.UserLogin))).Id;
             
             var incomeRecord = new Income()
             {
                 UserId = userId,
-                Date = request.Date,
+                Date = request.Date!.Value,
                 Description = request.Description,
-                Amount = request.Amount,
-                CurrencyId = request.CurrencyId
+                Amount = request.Amount!.Value,
+                CurrencyId = request.CurrencyId!.Value
             };
 
             _financeDashboardContext.Incomes.Add(incomeRecord);
             
             await _financeDashboardContext.SaveChangesAsync();
+
+            return Ok();
         }
     }
 }

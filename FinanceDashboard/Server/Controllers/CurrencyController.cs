@@ -1,8 +1,8 @@
 ﻿using FinanceDashboard.Server.Data;
 using FinanceDashboard.Server.Model;
+using FinanceDashboard.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace FinanceDashboard.Server.Controllers
 {
@@ -11,16 +11,18 @@ namespace FinanceDashboard.Server.Controllers
     public class CurrencyController : ControllerBase
     {
         private readonly FinanceDashboardContext _financeDashboardContext;
+        private readonly FinanceDashboardCacheAccessor _cacheAccessor;
 
-        public CurrencyController(FinanceDashboardContext financeDashboardContext)
+        public CurrencyController(FinanceDashboardContext financeDashboardContext, FinanceDashboardCacheAccessor cacheAccessor)
         {
             _financeDashboardContext = financeDashboardContext;
+            _cacheAccessor = cacheAccessor;
         }
         [HttpGet("list")]
         [Authorize(Roles = "Customer")]
-        public async Task<List<Currency>> GetCurrenciesAsync()
+        public List<Currency> GetCurrencies()
         {
-            return await _financeDashboardContext.Currencies.ToListAsync();
+            return _cacheAccessor.Currencies;
         }
     }
 }

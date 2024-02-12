@@ -1,7 +1,7 @@
 using FinanceDashboard.Server.Authentication;
 using FinanceDashboard.Server.Data;
+using FinanceDashboard.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -30,6 +30,8 @@ builder.Services.AddAuthentication(o =>
     };
 });
 builder.Services.AddScoped<UserAccountService>();
+builder.Services.AddSingleton<FinanceDashboardCacheService>();
+builder.Services.AddScoped<FinanceDashboardCacheAccessor>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

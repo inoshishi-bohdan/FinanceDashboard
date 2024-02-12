@@ -53,7 +53,7 @@
 
             <RadzenFormField Text="Amount" Variant="@variant">
                 <ChildContent>
-                    <RadzenNumeric ShowUpDown="false" Name="Amount" @bind-Value="@model.Amount" />
+                    <RadzenNumeric Min=1 ShowUpDown="false" Name="Amount" @bind-Value="@model.Amount" />
                 </ChildContent>
                 <Helper>
                     <RadzenRequiredValidator Component="Amount" Text="Amount is required." />
@@ -120,14 +120,14 @@
             }
             else
             {
-                <Input @bind-Value="editCache[data.Id].data.Amount" />
+                <Input @bind-Value="editCache[data.Id].data.Amount"/>
             }
         </PropertyColumn>
-        <PropertyColumn Property="c => c.CurrencyName" Title="Currency" Filters="_currencyFilters!" FilterMultiple="false"
+        <PropertyColumn Property="c => c.Currency" Title="Currency" Filters="_currencyFilters!" FilterMultiple="false"
                         OnFilter="(value,currency)=>currency!.StartsWith(value!)">
             @if (!editCache[data.Id].edit)
             {
-                @data.CurrencyName
+                @data.Currency
             }
             else
             {
@@ -180,45 +180,43 @@
 
     Variant variant = Variant.Outlined;
 
-    private CustomAuthenticationStateProvider? customAuthStateProvider = null;
-
     private bool _visibleForm = false;
     private bool _visibleButton = true;
 
-    private List<ExpenseCategory>? categories = null;
-    private List<Currency>? currencies = null;
-    private List<TableFilter<string>>? _categoryFilters = null;
-    private List<TableFilter<string>>? _currencyFilters = null;
+    private List<ExpenseCategory>? categories;
+    private List<Currency>? currencies;
+    private List<TableFilter<string>>? _categoryFilters;
+    private List<TableFilter<string>>? _currencyFilters;
     private IDictionary<int, (bool edit, ExpenseData data)> editCache = new Dictionary<int, (bool edit, ExpenseData data)>();
-    private List<ExpenseData>? listOfData = new();
+    private List<ExpenseData>? listOfData;
+    private string? userLogin;
 
     private CreateRequest model = new CreateRequest() { Description = "Some text"};
 
-    private bool ValidateCategoryId(int categoryId)
+    private bool ValidateCategoryId(int? categoryId)
     {
-        return categoryId != 0;
+        return categoryId != null;
     }
-    private bool ValidateCurrencyId(int currencyId)
+    private bool ValidateCurrencyId(int? currencyId)
     {
-        return currencyId != 0;
+        return currencyId != null;
     }
 
     private async Task OnSubmit(CreateRequest model)
     {
-        var authState = await customAuthStateProvider!.GetAuthenticationStateAsync();
-        var currentUserLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
-        model.UserLogin = currentUserLogin;
+        model.UserLogin = userLogin;
         var response  = await Http.PostAsJsonAsync("api/expense/create", model);
-        
+
         if (response.IsSuccessStatusCode)
         {
             ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly added", Duration = 4000 });
         }
         else
         {
-            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Record wasn't successfuly added", Duration = 4000 });
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = errorMessage, Duration = 4000 });
         }
-        
+
         CloseForm();
     }
 
@@ -237,12 +235,29 @@
     private async Task SaveEdit(int id)
     {
         editCache[id].data.ExpenseCategory = categories!.First(category => category.Id == editCache[id].data.ExpenseCategoryId).Name;
-        editCache[id].data.CurrencyName = currencies!.First(currency => currency.Id == editCache[id].data.CurrencyId).Name;
+        editCache[id].data.Currency = currencies!.First(currency => currency.Id == editCache[id].data.CurrencyId).Name;
 
         var index = listOfData!.FindIndex(item => item.Id == id);
         var expenseRecord = editCache[id].data;
 
-        var response = await Http.PutAsJsonAsync("api/expense/change", expenseRecord);
+        if (expenseRecord.Amount <= 0)
+        {
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Amount can not be equal to 0 or less", Duration = 4000 });
+
+            return;
+        }
+
+        var request = new UpdateRequest
+        {
+            Id = expenseRecord.Id,
+            Date = expenseRecord.Date,
+            Description = expenseRecord.Description,
+            ExpenseCategoryId = expenseRecord.ExpenseCategoryId,
+            Amount = expenseRecord.Amount,
+            CurrencyId = expenseRecord.CurrencyId    
+        };
+
+        var response = await Http.PostAsJsonAsync("api/expense/update", request);
 
         if (response.IsSuccessStatusCode)
         {
@@ -253,7 +268,8 @@
         }
         else
         {
-            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Record wasn't successfuly updated", Duration = 4000 });
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = errorMessage, Duration = 4000 });
             CancelEdit(id);
         }
     }
@@ -275,7 +291,8 @@
         }
         else
         {
-            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Record wasn't successfuly removed", Duration = 4000 });
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = errorMessage, Duration = 4000 });
         }
     }
 
@@ -301,10 +318,10 @@
     {
         await base.OnInitializedAsync();
 
-        customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
         var token = await customAuthStateProvider.GetToken();
         var authState = await customAuthStateProvider.GetAuthenticationStateAsync();
-        var userLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
+        userLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
 
         if (!string.IsNullOrWhiteSpace(token))
         {

@@ -1,17 +1,19 @@
 ﻿using FinanceDashboard.Client.Pages;
 using FinanceDashboard.Server.Data;
-using FinanceDashboard.Server.Model;
+using FinanceDashboard.Shared.DTO;
 using FinanceDashboard.Shared.DTO.Expense;
 using FinanceDashboard.Shared.DTO.Income;
+using FinanceDashboard.Shared.Enums;
 using FinanceDashboard.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace FinanceDashboard.Server.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/statistic")]
     [ApiController]
     public class StatisticController : ControllerBase
     {
@@ -23,37 +25,207 @@ namespace FinanceDashboard.Server.Controllers
         {
             _financeDashboardContext = financeDashboardContext;
         }
-        [HttpPost]
-        [Route("IncomesEUR")]
+
+        [HttpPost("incomeEUR")]
         [Authorize(Roles = "Customer")]
-        public async Task<List<StatisticData>> GetUserIncomesEURAsync([FromBody] StatGetIncomesRequest getIncomesRequest)
+        [ProducesResponseType(typeof(List<ChartData>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public IActionResult GetIncomeStatisticEUR([FromBody] Shared.DTO.Income.GetStatisticRequest request)
         {
-            return await _financeDashboardContext.Incomes.AsQueryable().Where(income => income.User.Login.Equals(getIncomesRequest.UserLogin))
-                .Select(income => new StatisticData { Amount = income.CurrencyId == 1 ? income.Amount : income.Amount * USDToEURRate, Date = income.Date }).ToListAsync();
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin)
+                .FieldIsRequired(x => x.Year);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            var result = _financeDashboardContext.Incomes
+                .AsQueryable()
+                .Where(income => income.User.Login == request.UserLogin && income.Date.Year == request.Year)
+                .Select(income => new StatisticData { Amount = income.CurrencyId == (int)Currencies.EUR ? income.Amount : income.Amount * USDToEURRate, Date = income.Date })
+                .ToChartData();
+
+            return Ok(result);
         }
-        [HttpPost]
-        [Route("IncomesUSD")]
+
+        [HttpPost("incomeUSD")]
         [Authorize(Roles = "Customer")]
-        public async Task<List<StatisticData>> GetUserIncomesUSDAsync([FromBody] StatGetIncomesRequest getIncomesRequest)
+        [ProducesResponseType(typeof(List<ChartData>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public IActionResult GetIncomeStatisticUSD([FromBody] Shared.DTO.Income.GetStatisticRequest request)
         {
-            return await _financeDashboardContext.Incomes.AsQueryable().Where(income => income.User.Login.Equals(getIncomesRequest.UserLogin))
-                .Select(income => new StatisticData { Amount = income.CurrencyId == 2 ? income.Amount : income.Amount * EURToUSDRate, Date = income.Date }).ToListAsync();
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin)
+                .FieldIsRequired(x => x.Year);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            var result = _financeDashboardContext.Incomes
+                .AsQueryable()
+                .Where(income => income.User.Login == request.UserLogin && income.Date.Year == request.Year)
+                .Select(income => new StatisticData { Amount = income.CurrencyId == (int)Currencies.USD ? income.Amount : income.Amount * EURToUSDRate, Date = income.Date })
+                .ToChartData();
+
+            return Ok(result);
         }
-        [HttpPost]
-        [Route("ExpensesEUR")]
+
+        [HttpPost("expenseEUR")]
         [Authorize(Roles = "Customer")]
-        public async Task<List<StatisticData>> GetUserExpensesEURAsync([FromBody] StatGetExpensesRequest getExpensesRequest)
+        [ProducesResponseType(typeof(List<ChartData>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public IActionResult GetExpenseStatisticEUR([FromBody] Shared.DTO.Expense.GetStatisticRequest request)
         {
-            return await _financeDashboardContext.Expenses.AsQueryable().Where(expense => expense.User.Login.Equals(getExpensesRequest.UserLogin))
-                .Select(expense => new StatisticData { Amount = expense.CurrencyId == 1 ? expense.Amount : expense.Amount * USDToEURRate, Date = expense.Date }).ToListAsync();
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin)
+                .FieldIsRequired(x => x.Year);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            var result = _financeDashboardContext.Expenses
+                .AsQueryable()
+                .Where(expense => expense.User.Login == request.UserLogin && expense.Date.Year == request.Year)
+                .Select(expense => new StatisticData { Amount = expense.CurrencyId == (int)Currencies.EUR ? expense.Amount : expense.Amount * USDToEURRate, Date = expense.Date })
+                .ToChartData();
+
+            return Ok(result);
         }
-        [HttpPost]
-        [Route("ExpensesUSD")]
+
+        [HttpPost("expenseUSD")]
         [Authorize(Roles = "Customer")]
-        public async Task<List<StatisticData>> GetUserExpensesUSDAsync([FromBody] StatGetExpensesRequest getExpensesRequest)
+        [ProducesResponseType(typeof(List<ChartData>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public IActionResult GetExpenseStatisticUSD([FromBody] Shared.DTO.Expense.GetStatisticRequest request)
         {
-            return await _financeDashboardContext.Expenses.AsQueryable().Where(expense => expense.User.Login.Equals(getExpensesRequest.UserLogin))
-                .Select(expense => new StatisticData { Amount = expense.CurrencyId == 2 ? expense.Amount : expense.Amount * EURToUSDRate, Date = expense.Date }).ToListAsync();
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin)
+                .FieldIsRequired(x => x.Year);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            var result = _financeDashboardContext.Expenses
+                .AsQueryable()
+                .Where(expense => expense.User.Login == request.UserLogin && expense.Date.Year == request.Year)
+                .Select(expense => new StatisticData { Amount = expense.CurrencyId == (int)Currencies.USD ? expense.Amount : expense.Amount * EURToUSDRate, Date = expense.Date })
+                .ToChartData();
+
+            return Ok(result);
+        }
+
+        [HttpPost("netWorthEUR")]
+        [Authorize(Roles = "Customer")]
+        [ProducesResponseType(typeof(List<ChartData>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public IActionResult GetNetWorthStatisticEUR([FromBody] GetNetWorthStatisticRequest request)
+        {
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin)
+                .FieldIsRequired(x => x.Year);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            var incomes = _financeDashboardContext.Incomes
+                .AsQueryable()
+                .Where(income => income.User.Login == request.UserLogin && income.Date.Year == request.Year)
+                .Select(income => new StatisticData { Amount = income.CurrencyId == (int)Currencies.EUR ? income.Amount : income.Amount * USDToEURRate, Date = income.Date })
+                .ToChartData();
+
+            var expenses = _financeDashboardContext.Expenses
+                .AsQueryable()
+                .Where(expense => expense.User.Login == request.UserLogin && expense.Date.Year == request.Year)
+                .Select(expense => new StatisticData { Amount = expense.CurrencyId == (int)Currencies.EUR ? expense.Amount : expense.Amount * USDToEURRate, Date = expense.Date })
+                .ToChartData();
+
+            foreach (var monthIncome in incomes)
+            {
+                var monthExpense = expenses.Find(item => item.Month == monthIncome.Month);
+                monthIncome.Amount -= monthIncome.Amount;
+            }
+
+            return Ok(incomes);
+        }
+
+        [HttpPost("netWorthUSD")]
+        [Authorize(Roles = "Customer")]
+        [ProducesResponseType(typeof(List<ChartData>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public IActionResult GetNetWorthStatisticUSD([FromBody] GetNetWorthStatisticRequest request)
+        {
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin)
+                .FieldIsRequired(x => x.Year);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            var incomes =  _financeDashboardContext.Incomes
+                .AsQueryable()
+                .Where(income => income.User.Login == request.UserLogin && income.Date.Year == request.Year)
+                .Select(income => new StatisticData { Amount = income.CurrencyId == (int)Currencies.USD ? income.Amount : income.Amount * EURToUSDRate, Date = income.Date })
+                .ToChartData();
+
+            var expenses = _financeDashboardContext.Expenses
+                .AsQueryable()
+                .Where(expense => expense.User.Login == request.UserLogin && expense.Date.Year == request.Year)
+                .Select(expense => new StatisticData { Amount = expense.CurrencyId == (int)Currencies.USD ? expense.Amount : expense.Amount * EURToUSDRate, Date = expense.Date })
+                .ToChartData();
+
+            foreach (var monthIncome in incomes)
+            {
+                var monthExpense = expenses.Find(item => item.Month == monthIncome.Month);
+                monthIncome.Amount -= monthIncome.Amount;
+            }
+
+            return Ok(incomes);
+        }
+
+        [HttpPost("incomeYears")]
+        [Authorize(Roles = "Customer")]
+        [ProducesResponseType(typeof(List<int>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetIncomeYearsAsync([FromBody] GetIncomesYearsRequest request)
+        {
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            var result =  await _financeDashboardContext.Incomes
+                .AsQueryable()
+                .Where(income => income.User.Login == request.UserLogin).Select(income => income.Date.Year).Distinct().ToListAsync();
+
+                return Ok(result);
+        }
+
+        [HttpPost("expenseYears")]
+        [Authorize(Roles = "Customer")]
+        [ProducesResponseType(typeof(List<int>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetExpenseYearsAsync([FromBody] GetExpensesYearsRequest request)
+        {
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            var result =  await _financeDashboardContext.Expenses
+                .AsQueryable()
+                .Where(expense => expense.User.Login == request.UserLogin).Select(expense => expense.Date.Year).Distinct().ToListAsync();
+
+            return Ok(result);
         }
     }
 }
