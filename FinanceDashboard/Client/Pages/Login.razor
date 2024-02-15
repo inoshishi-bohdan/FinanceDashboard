@@ -36,26 +36,31 @@
 
 @code {
     private LoginRequest loginRequest = new LoginRequest();
-    private bool validateOnChange = false;
+    //private bool validateOnChange = false;
     private RadzenLogin loginForm = new RadzenLogin();
 
     private async Task Authenticate(LoginArgs args)
     {
         loginRequest.UserLogin = args.Username;
         loginRequest.Password = args.Password;
-        var loginResponse = await httpClient.PostAsJsonAsync<LoginRequest>("/api/Account/Login", loginRequest);
+        var response = await httpClient.PostAsJsonAsync<LoginRequest>("api/account/login", loginRequest);
 
-        if (loginResponse.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode)
         {
-            var userSession = await loginResponse.Content.ReadFromJsonAsync<UserSession>();
+            var userSession = await response.Content.ReadFromJsonAsync<UserSession>();
             var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
             await customAuthStateProvider.UpdateAuthenticationState(userSession);
             navManager.NavigateTo("/", true);
         }
-        else if (loginResponse.StatusCode == HttpStatusCode.Unauthorized)
+        else if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Invalid User Email or Password", Duration = 4000 });
             return;
+        }
+        else
+        {
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = errorMessage, Duration = 4000 });  
         }
     }
     private void MoveToRegisterPage()

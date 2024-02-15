@@ -3,12 +3,11 @@ using FinanceDashboard.Server.Data;
 using FinanceDashboard.Server.Model;
 using FinanceDashboard.Shared;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinanceDashboard.Server.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/account")]
     [ApiController]
     public class AccountController : ControllerBase
     {
@@ -20,13 +19,21 @@ namespace FinanceDashboard.Server.Controllers
             _userAccountService = userAccountService;
             _financeDashboardContext = financeDashboardContext;
         }
-        [HttpPost]
-        [Route("Login")]
+        [HttpPost("login")]
         [AllowAnonymous]
-        public ActionResult<UserSession> Login([FromBody] LoginRequest loginRequest)
+        public ActionResult<UserSession> Login([FromBody] LoginRequest request)
         {
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.UserLogin)
+                .FieldIsRequired(x => x.Password);
+
+            if (validator.Any()) return validator.BadRequest();
+
             var jwtAuthenticationManager = new JwtAuthenticationManager(_userAccountService);
-            var userSession = jwtAuthenticationManager.GenerateJwtToken(loginRequest.UserLogin, loginRequest.Password);
+            var userSession = jwtAuthenticationManager.GenerateJwtToken(request.UserLogin!, request.Password!);
+            
             if (userSession is null)
             {
                 return Unauthorized();
@@ -36,24 +43,34 @@ namespace FinanceDashboard.Server.Controllers
                 return userSession;
             }
         }
-        [HttpPost]
-        [Route("Register")]
+        [HttpPost("register")]
         [AllowAnonymous]
-        public ActionResult<UserSession> Register([FromBody] RegisterRequest registerRequest)
+        public ActionResult<UserSession> Register([FromBody] RegisterRequest request)
         {
-            var jwtAuthenticationManager = new JwtAuthenticationManager(_userAccountService);
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.Login)
+                .FieldIsRequired(x => x.Password);
+
+            if (validator.Any()) return validator.BadRequest();
+
+            var rand = new Random();
+            var jwtAuthenticationManager = new JwtAuthenticationManager(_userAccountService);        
             var newUser = new User
             {
-                Name = registerRequest.Name,
-                Surname = registerRequest.Surname,
-                Login = registerRequest.Login,
-                Password = jwtAuthenticationManager.GetHashedPassword(registerRequest.Password),
+                Name = request.Name ?? "User",
+                Surname = request.Surname ?? rand.Next().ToString(),
+                Login = request.Login!,
+                Password = jwtAuthenticationManager.GetHashedPassword(request.Password!),
                 RoleId = 1
             };
+
             _financeDashboardContext.Users.Add(newUser);
             _financeDashboardContext.SaveChanges();
             // add user to database and then authentication
-            var userSession = jwtAuthenticationManager.GenerateJwtToken(registerRequest.Login, registerRequest.Password);
+            var userSession = jwtAuthenticationManager.GenerateJwtToken(request.Login!, request.Password!);
+            
             if (userSession is null)
             {
                 return Unauthorized();
@@ -63,15 +80,22 @@ namespace FinanceDashboard.Server.Controllers
                 return userSession;
             }
         }
-        [HttpPost]
-        [Route("UserExist")]
+        [HttpPost("userExist")]
         [AllowAnonymous]
-        public ActionResult<bool> CheckExistingUsers([FromBody] UserExistenceRequest userExistenceRequest)
+        public ActionResult<bool> CheckExistingUsers([FromBody] UserExistenceRequest request)
         {
-            if (_userAccountService.GetUserAccountByUserLogin(userExistenceRequest.Login) != null)
+            var validator = FieldValidator.Create(request);
+
+            validator
+                .FieldIsRequired(x => x.Login);
+
+            if (validator.Any()) return validator.BadRequest();
+            
+            if (_userAccountService.GetUserAccountByUserLogin(request.Login!) != null)
             {
                 return true;
             }
+
             return false;
         }
     }

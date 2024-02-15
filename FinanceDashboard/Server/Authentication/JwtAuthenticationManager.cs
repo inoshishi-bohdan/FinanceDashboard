@@ -34,7 +34,7 @@ namespace FinanceDashboard.Server.Authentication
             var tokenExpiryTimeStamp = DateTime.UtcNow.AddMinutes(JWT_TOKEN_VALIDITY_MINS);
             var tokenKey = Encoding.ASCII.GetBytes(JWT_SECURITY_KEY);
             var claimsIdentity = new ClaimsIdentity(new List<Claim> {
-                new Claim(ClaimTypes.Name, userAccount.UserName),
+                new Claim(ClaimTypes.Name, userAccount.UserName!),
                 new Claim(ClaimTypes.Role, userAccount.Role),
             });
             var signingCredentials = new SigningCredentials(

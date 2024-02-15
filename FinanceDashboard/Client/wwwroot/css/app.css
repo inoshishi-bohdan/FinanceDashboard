@@ -74,3 +74,14 @@ a, .btn-link {
     }
 }
 
+
+@media only screen and (min-width: 2200px) {
+    .statistic {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .chart {
+        flex: 0 0 50%;
+        padding:15px;
+    }
+}

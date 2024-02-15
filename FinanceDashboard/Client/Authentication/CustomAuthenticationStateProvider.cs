@@ -25,7 +25,7 @@ namespace FinanceDashboard.Client.Authentication
                     return await Task.FromResult(new AuthenticationState(_anonymous));
                 var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>
                 {
-                    new Claim(ClaimTypes.Name, userSession.UserName),
+                    new Claim(ClaimTypes.Name, userSession.UserName!),
                     new Claim(ClaimTypes.Role, userSession.Role),
                     new Claim(ClaimTypes.Email, userSession.UserLogin)
                 }, "JwtAuth"));
@@ -46,7 +46,7 @@ namespace FinanceDashboard.Client.Authentication
             {
                 claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>
                 {
-                    new Claim(ClaimTypes.Name, userSession.UserName),
+                    new Claim(ClaimTypes.Name, userSession.UserName!),
                     new Claim(ClaimTypes.Role, userSession.Role),
                     new Claim(ClaimTypes.Email, userSession.UserLogin)
                 }));

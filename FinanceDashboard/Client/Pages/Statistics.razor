@@ -22,92 +22,103 @@
 
 <h1>Statistics</h1>
 
-<div Class="rz-p-0 rz-p-md-8">
+<div Class="rz-p-0 rz-p-md-8 statistic">
 
-    <h2>Incomes</h2>
+    <div class="chart">
+        <h2>Incomes</h2>
 
-    <RadzenCard Variant="Variant.Flat" class="mt-4 w-100 mb-4 d-flex align-items-center">
-        <RadzenLabel Text="Currency" Style="margin-right: 8px; vertical-align: middle;" />
-        <RadzenDropDown Change="@(async args => await UpdateIncomesChartData())" Data="@_currencies" TextProperty="Name" ValueProperty="Id" @bind-Value="@_incomesSelectedCurencyId" />
+        <RadzenCard Variant="Variant.Flat" class="mt-4 w-100 mb-4 d-flex align-items-center">
+            <RadzenLabel Text="Currency" Style="margin-right: 8px; vertical-align: middle;" />
+            <RadzenDropDown Change="@(async args => UpdateIncomesChartData())" Data="@_currencies" TextProperty="Name" ValueProperty="Id" @bind-Value="@_incomesSelectedCurencyId" />
 
-        <RadzenLabel class="rz-ml-4" Text="Year" Style="margin-right: 8px; vertical-align: middle;" />
-        <RadzenDropDown Change="@(async args => await UpdateIncomesChartData())" Data="@_incomesYears" @bind-Value="@_incomesSelectedYear" />
-    </RadzenCard>
+            <RadzenLabel class="rz-ml-4" Text="Year" Style="margin-right: 8px; vertical-align: middle;" />
+            <RadzenDropDown Change="@(async args => UpdateIncomesChartData())" Data="@_incomesYears" @bind-Value="@_incomesSelectedYear" />
+        </RadzenCard>
 
-    <RadzenChart>
-        <RadzenColumnSeries Fill="#95A4A8" Title="@_incomesChartName" Data="@_incomesChartData" CategoryProperty="Month" LineType="LineType.Dashed" ValueProperty="Amount">
-            <RadzenSeriesDataLabels Visible="@showDataLabels" />
-        </RadzenColumnSeries>
-        <RadzenColumnOptions Radius="5" />
-        <RadzenValueAxis Min="0" Max="@_incomeMax" Step="@_incomeStep">
-            <RadzenGridLines Visible="true" />
-            <RadzenAxisTitle Text="@_incomesAxisTitle" />
-        </RadzenValueAxis>
-        <RadzenLegend Visible="false" />
-    </RadzenChart>
+        <RadzenChart>
+            <RadzenColumnSeries Fill="#95A4A8" Title="@_incomesChartName" Data="@_incomesChartData" CategoryProperty="Month" LineType="LineType.Dashed" ValueProperty="Amount">
+                <RadzenSeriesDataLabels Visible="@showDataLabels" />
+            </RadzenColumnSeries>
+            <RadzenColumnOptions Radius="5" />
+            <RadzenValueAxis Min="0" Max="@_incomeMax" Step="@_incomeStep">
+                <RadzenGridLines Visible="true" />
+                <RadzenAxisTitle Text="@_incomesAxisTitle" />
+            </RadzenValueAxis>
+            <RadzenLegend Visible="false" />
+        </RadzenChart>
+    </div>
 
-    <br />
+    <div class="chart">
+        <h2>Expenses</h2>
 
-    <h2>Expenses</h2>
+        <RadzenCard Variant="Variant.Flat" class="mt-4 w-100 mb-4 d-flex align-items-center">
+            <RadzenLabel Text="Currency" Style="margin-right: 8px; vertical-align: middle;" />
+            <RadzenDropDown Change="@(async args => UpdateExpensesChartData())" Data="@_currencies" TextProperty="Name" ValueProperty="Id" @bind-Value="@_expensesSelectedCurencyId" />
 
-    <RadzenCard Variant="Variant.Flat" class="mt-4 w-100 mb-4 d-flex align-items-center">
-        <RadzenLabel Text="Currency" Style="margin-right: 8px; vertical-align: middle;" />
-        <RadzenDropDown Change="@(async args => await UpdateExpensesChartData())" Data="@_currencies" TextProperty="Name" ValueProperty="Id" @bind-Value="@_expensesSelectedCurencyId" />
+            <RadzenLabel class="rz-ml-4" Text="Year" Style="margin-right: 8px; vertical-align: middle;" />
+            <RadzenDropDown Change="@(async args => UpdateExpensesChartData())" Data="@_expensesYears" @bind-Value="@_expensesSelectedYear" />
+        </RadzenCard>
 
-        <RadzenLabel class="rz-ml-4" Text="Year" Style="margin-right: 8px; vertical-align: middle;" />
-        <RadzenDropDown Change="@(async args => await UpdateExpensesChartData())" Data="@_expensesYears" @bind-Value="@_expensesSelectedYear" />
-    </RadzenCard>
+        <RadzenChart>
+            <RadzenColumnSeries Fill="#45494F" Title="@_expensesChartName" Data="@_expensesChartData" CategoryProperty="Month" LineType="LineType.Dashed" ValueProperty="Amount">
+                <RadzenSeriesDataLabels Visible="@showDataLabels" />
+            </RadzenColumnSeries>
+            <RadzenColumnOptions Radius="5" />
+            <RadzenValueAxis Min="0" Max="@_expenseMax" Step="@_expenseStep">
+                <RadzenGridLines Visible="true" />
+                <RadzenAxisTitle Text="@_expensesAxisTitle" />
+            </RadzenValueAxis>
+            <RadzenLegend Visible="false" />
+        </RadzenChart>
+    </div>
 
-    <RadzenChart>
-        <RadzenColumnSeries Fill="#45494F" Title="@_expensesChartName" Data="@_expensesChartData" CategoryProperty="Month" LineType="LineType.Dashed" ValueProperty="Amount">
-            <RadzenSeriesDataLabels Visible="@showDataLabels" />
-        </RadzenColumnSeries>
-        <RadzenColumnOptions Radius="5" />
-        <RadzenValueAxis Min="0" Max="@_expenseMax" Step="@_expenseStep">
-            <RadzenGridLines Visible="true" />
-            <RadzenAxisTitle Text="@_expensesAxisTitle" />
-        </RadzenValueAxis>
-        <RadzenLegend Visible="false" />
-    </RadzenChart>
+    <div class="chart">
+        <h2>NetWorth</h2>
 
+        <RadzenCard Variant="Variant.Flat" class="mt-4 w-100 mb-4 d-flex align-items-center" Style="gap: 0.5rem">
+            <RadzenLabel Text="Currency" Style="margin-right: 8px; vertical-align: middle;" />
+            <RadzenDropDown Change="@(async args => UpdateNetWorthChartData())" Data="@_currencies" TextProperty="Name" ValueProperty="Id" @bind-Value="@_netWorthSelectedCurencyId" />
 
-    <h2>NetWorth</h2>
+            <RadzenLabel class="rz-ml-4" Text="Year" Style="margin-right: 8px; vertical-align: middle;" />
+            <RadzenDropDown Change="@(async args => UpdateNetWorthChartData())" Data="@_incomesYears" @bind-Value="@_netWorthSelectedYear" />
+        </RadzenCard>
 
-    <RadzenCard  Variant="Variant.Flat" class="mt-4 w-100 mb-4 d-flex align-items-center" Style="gap: 0.5rem">
-        <RadzenLabel Text="Currency" Style="margin-right: 8px; vertical-align: middle;" />
-        <RadzenDropDown Change="@(async args => await UpdateNetWorthChartData())" Data="@_currencies" TextProperty="Name" ValueProperty="Id" @bind-Value="@_netWorthSelectedCurencyId" />
+        <RadzenCheckBox @bind-Value="@trend" Name="trend"></RadzenCheckBox>
+        <RadzenLabel Text="Trend" Component="trend" Style="margin-right: 1rem;" class="rz-color-danger-dark" />
+        <RadzenCheckBox @bind-Value="@median" Name="median"></RadzenCheckBox>
+        <RadzenLabel Text="Median" Component="median" Style="margin-right: 1rem;" class="rz-color-success-dark" />
+        <RadzenCheckBox @bind-Value="@mean" Name="mean"></RadzenCheckBox>
+        <RadzenLabel Text="Mean" Component="mean" Style="margin-right: 1rem;" class="rz-color-info-dark" />
+        <RadzenCheckBox @bind-Value="@mode" Name="mode"></RadzenCheckBox>
+        <RadzenLabel Text="Mode" Component="mode" class="rz-color-warning-darker" />
 
-        <RadzenLabel class="rz-ml-4" Text="Year" Style="margin-right: 8px; vertical-align: middle;" />
-        <RadzenDropDown Change="@(async args => await UpdateNetWorthChartData())" Data="@_incomesYears" @bind-Value="@_netWorthSelectedYear" />
-    </RadzenCard>
+        <RadzenChart>
+            <RadzenLineSeries Smooth="@smooth" Data="@_netWorthChartData" CategoryProperty="Month" Title="@_netWorthChartName" ValueProperty="Amount">
+                <RadzenMarkers MarkerType="MarkerType.Circle" />
+                <RadzenSeriesTrendLine Visible="@trend" Stroke="var(--rz-danger-dark)" LineType="LineType.Dashed" />
+                <RadzenSeriesMedianLine Visible="@median" Stroke="var(--rz-success-dark)" LineType="LineType.Dotted" />
+                <RadzenSeriesMeanLine Visible="@mean" Stroke="var(--rz-info-dark)" LineType="LineType.Dotted" />
+                <RadzenSeriesModeLine Visible="@mode" Stroke="var(--rz-warning-darker)" LineType="LineType.Dotted" />
+            </RadzenLineSeries>
 
-    <RadzenCheckBox @bind-Value="@trend" Name="trend"></RadzenCheckBox>
-    <RadzenLabel Text="Trend" Component="trend" Style="margin-right: 1rem;" class="rz-color-danger-dark" />
-    <RadzenCheckBox @bind-Value="@median" Name="median"></RadzenCheckBox>
-    <RadzenLabel Text="Median" Component="median" Style="margin-right: 1rem;" class="rz-color-success-dark" />
-    <RadzenCheckBox @bind-Value="@mean" Name="mean"></RadzenCheckBox>
-    <RadzenLabel Text="Mean" Component="mean" Style="margin-right: 1rem;" class="rz-color-info-dark" />
-    <RadzenCheckBox @bind-Value="@mode" Name="mode"></RadzenCheckBox>
-    <RadzenLabel Text="Mode" Component="mode" class="rz-color-warning-darker" />
+            <RadzenValueAxis Min="@_netWorthMin" Max="_netWorthMax" Step="@_netWorthStep">
+                <RadzenGridLines Visible="true" />
+                <RadzenAxisTitle Text="@_netWorthAxisTitle" />
+            </RadzenValueAxis>
+            <RadzenLegend Visible="false" />
+        </RadzenChart>
 
-    <RadzenChart>
-        <RadzenLineSeries Smooth="@smooth" Data="@_netWorthChartData" CategoryProperty="Month" Title="@_netWorthChartName" ValueProperty="Amount" >
-            <RadzenMarkers MarkerType="MarkerType.Circle" />
-            <RadzenSeriesTrendLine Visible="@trend" Stroke="var(--rz-danger-dark)" LineType="LineType.Dashed" />
-            <RadzenSeriesMedianLine Visible="@median" Stroke="var(--rz-success-dark)" LineType="LineType.Dotted" />
-            <RadzenSeriesMeanLine Visible="@mean" Stroke="var(--rz-info-dark)" LineType="LineType.Dotted" />
-            <RadzenSeriesModeLine Visible="@mode" Stroke="var(--rz-warning-darker)" LineType="LineType.Dotted" />
-        </RadzenLineSeries>
-
-        <RadzenValueAxis Min="@_netWorthMin" Max="_netWorthMax" Step="@_netWorthStep">
-            <RadzenGridLines Visible="true" />
-            <RadzenAxisTitle Text="@_netWorthAxisTitle" />
-        </RadzenValueAxis>
-        <RadzenLegend Visible="false" />
-    </RadzenChart>
+    </div>
 </div>
 
 @code {
+    private class YearData
+    {
+        public List<ChartData> EURData { get; set; } = null!;
+        public List<ChartData> USDData { get; set; } = null!;
+
+    }
+
     private bool smooth = true;
     private bool showDataLabels = false;
     private bool trend = false;
@@ -124,6 +135,7 @@
     private List<int>? _expensesYears;
     private int _expenseMax = 100;
     private int _expenseStep = 100;
+    private Dictionary<int, YearData> _expenseChartDataCollection = new Dictionary<int, YearData>();
 
     private string? _incomesChartName;
     private string? _incomesAxisTitle;
@@ -134,6 +146,7 @@
     private List<int>? _incomesYears;
     private int _incomeMax = 100;
     private int _incomeStep = 100;
+    private Dictionary<int, YearData> _incomeChartDataCollection = new Dictionary<int, YearData>();
 
     private string? _netWorthChartName;
     private string? _netWorthAxisTitle;
@@ -144,15 +157,24 @@
     private int _netWorthMin = 0;
     private int _netWorthMax = 100;
     private int _netWorthStep = 100;
+    private Dictionary<int, YearData> _netWorthChartDataCollection = new Dictionary<int, YearData>();
 
     private string? userLogin;
     private List<Currency>? _currencies;
 
 
 
-    private async Task UpdateIncomesChartData()
+    private void UpdateIncomesChartData()
     {
-        _incomesChartData = await GetFormattedIncomesAsync(_incomesSelectedCurencyId, userLogin!, _incomesSelectedYear);
+        if ((Currencies)_incomesSelectedCurencyId == Currencies.EUR)
+        {
+            _incomesChartData = _incomeChartDataCollection[_incomesSelectedYear].EURData;
+        }
+        else
+        {
+            _incomesChartData = _incomeChartDataCollection[_incomesSelectedYear].USDData;
+        }
+
         _incomesChartName = $"{_incomesSelectedYear}";
         _incomesSelectedCurrencyName = _currencies!.First(currency => currency.Id == _incomesSelectedCurencyId).Name;
         _incomesAxisTitle = $"Income in {_incomesSelectedCurrencyName}";
@@ -160,9 +182,17 @@
         _incomeStep = GetChartStep(_incomeMax);
     }
 
-    private async Task UpdateExpensesChartData()
+    private void UpdateExpensesChartData()
     {
-        _expensesChartData = await GetFormattedExpensesAsync(_expensesSelectedCurencyId, userLogin!, _expensesSelectedYear);
+        if ((Currencies)_expensesSelectedCurencyId == Currencies.EUR)
+        {
+            _expensesChartData = _expenseChartDataCollection[_expensesSelectedYear].EURData;
+        }
+        else
+        {
+            _expensesChartData = _expenseChartDataCollection[_expensesSelectedYear].USDData;
+        }
+
         _expensesChartName = $"{_expensesSelectedYear}";
         _expensesSelectedCurrencyName = _currencies!.First(currency => currency.Id == _expensesSelectedCurencyId).Name;
         _expensesAxisTitle = $"Expense in {_expensesSelectedCurrencyName}";
@@ -170,9 +200,17 @@
         _expenseStep = GetChartStep(_expenseMax);
     }
 
-    private async Task UpdateNetWorthChartData()
+    private void UpdateNetWorthChartData()
     {
-        _netWorthChartData = await GetFormattedNetWorthAsync(_netWorthSelectedCurencyId, userLogin!, _netWorthSelectedYear);
+        if ((Currencies)_netWorthSelectedCurencyId == Currencies.EUR)
+        {
+            _netWorthChartData = _netWorthChartDataCollection[_netWorthSelectedYear].EURData;
+        }
+        else
+        {
+            _netWorthChartData = _netWorthChartDataCollection[_netWorthSelectedYear].USDData;
+        }
+
         _netWorthChartName = $"{_netWorthSelectedYear}";
         _netWorthSelectedCurrencyName = _currencies!.First(currency => currency.Id == _netWorthSelectedCurencyId).Name;
         _netWorthAxisTitle = $"Net Worth in {_netWorthSelectedCurrencyName}";
@@ -377,11 +415,41 @@
             _expensesSelectedYear = _expensesYears!.Count != 0 ? _expensesYears.Last() : default;
             _netWorthSelectedYear = _incomesSelectedYear;
 
-            _incomesChartData = await GetFormattedIncomesAsync((int)Currencies.EUR, userLogin!, _incomesSelectedYear);
-            _expensesChartData = await GetFormattedExpensesAsync((int)Currencies.EUR, userLogin!, _expensesSelectedYear);
-            _netWorthChartData = await GetFormattedNetWorthAsync((int)Currencies.EUR, userLogin!, _netWorthSelectedYear);
-
             _currencies = await Http.GetFromJsonAsync<List<Currency>>("api/currency/list");
+
+            List<ChartData> incEUR;
+            List<ChartData> incUSD;
+            foreach (var year in _incomesYears)
+            {
+                incEUR = await GetFormattedIncomesAsync((int)Currencies.EUR, userLogin!, year);
+                incUSD = await GetFormattedIncomesAsync((int)Currencies.USD, userLogin!, year);
+
+                _incomeChartDataCollection.Add(year, new YearData { EURData = incEUR, USDData = incUSD });
+            }
+
+            List<ChartData> expEUR;
+            List<ChartData> expUSD;
+            foreach (var year in _expensesYears)
+            {
+                expEUR = await GetFormattedExpensesAsync((int)Currencies.EUR, userLogin!, year);
+                expUSD = await GetFormattedExpensesAsync((int)Currencies.USD, userLogin!, year);
+
+                _expenseChartDataCollection.Add(year, new YearData { EURData = expEUR, USDData = expUSD });
+            }
+
+            List<ChartData> nwtEUR;
+            List<ChartData> nwtUSD;
+            foreach (var year in _incomesYears)
+            {
+                nwtEUR = await GetFormattedNetWorthAsync((int)Currencies.EUR, userLogin!, year);
+                nwtUSD = await GetFormattedNetWorthAsync((int)Currencies.USD, userLogin!, year);
+
+                _netWorthChartDataCollection.Add(year, new YearData { EURData = nwtEUR, USDData = nwtUSD });
+            }
+
+            _incomesChartData = _incomeChartDataCollection[_incomesSelectedYear].EURData;
+            _expensesChartData = _expenseChartDataCollection[_expensesSelectedYear].EURData;
+            _netWorthChartData = _netWorthChartDataCollection[_netWorthSelectedYear].EURData;
 
             _incomesChartName = $"{_incomesSelectedYear}";
             _expensesChartName = $"{_expensesSelectedYear}";
