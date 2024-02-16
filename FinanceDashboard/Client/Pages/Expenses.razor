@@ -116,11 +116,11 @@
         <PropertyColumn Property="c => c.Amount" Title="Amount" Sortable>
             @if (!editCache[data.Id].edit)
             {
-                @data.Amount
+                @data.Amount.ToString("F2")
             }
             else
             {
-                <Input @bind-Value="editCache[data.Id].data.Amount"/>
+                <Input @bind-Value="editCache[data.Id].data.Amount" />
             }
         </PropertyColumn>
         <PropertyColumn Property="c => c.Currency" Title="Currency" Filters="_currencyFilters!" FilterMultiple="false"
@@ -248,14 +248,14 @@
         }
 
         var request = new UpdateRequest
-        {
-            Id = expenseRecord.Id,
-            Date = expenseRecord.Date,
-            Description = expenseRecord.Description,
-            ExpenseCategoryId = expenseRecord.ExpenseCategoryId,
-            Amount = expenseRecord.Amount,
-            CurrencyId = expenseRecord.CurrencyId    
-        };
+            {
+                Id = expenseRecord.Id,
+                Date = expenseRecord.Date,
+                Description = expenseRecord.Description,
+                ExpenseCategoryId = expenseRecord.ExpenseCategoryId,
+                Amount = Math.Round(expenseRecord.Amount, 2),
+                CurrencyId = expenseRecord.CurrencyId
+            };
 
         var response = await Http.PostAsJsonAsync("api/expense/update", request);
 

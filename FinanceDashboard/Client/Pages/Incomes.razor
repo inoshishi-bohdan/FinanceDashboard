@@ -90,7 +90,7 @@
         <PropertyColumn Property="c => c.Amount" Title="Amount" Sortable>
             @if (!editCache[data.Id].edit)
             {
-                @data.Amount
+                @data.Amount.ToString("F2")
             }
             else
             {
@@ -218,13 +218,13 @@
         }
 
         var request = new UpdateRequest
-        {
-            Id = incomeRecord.Id,
-            Date = incomeRecord.Date,
-            Description = incomeRecord.Description,
-            Amount = incomeRecord.Amount,
-            CurrencyId = incomeRecord.CurrencyId
-        };
+            {
+                Id = incomeRecord.Id,
+                Date = incomeRecord.Date,
+                Description = incomeRecord.Description,
+                Amount = Math.Round(incomeRecord.Amount, 2),
+                CurrencyId = incomeRecord.CurrencyId
+            };
 
         var response = await Http.PostAsJsonAsync("api/income/update", request);
 
