@@ -1,5 +1,11 @@
 ﻿@page "/"
+
+@using FinanceDashboard.Client.Authentication;
+
+
 @inject IJSRuntime js;
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject NavigationManager navManager
 
 <PageTitle>Index</PageTitle>
 
@@ -10,13 +16,20 @@
         <h5>Let's organize your finances &#10024;</h5>
 
     </Authorized>
-    <NotAuthorized>
-        <h1>Hello, Guest! &#x1F44B;</h1>
-        <h5>Let's start our journey &#9889;</h5>
-    </NotAuthorized>
 </AuthorizeView>
 
 
 @code {
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
 
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
+        var token = await customAuthStateProvider.GetToken();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            navManager.NavigateTo("/login");
+            return;
+        }
+    }
 }
