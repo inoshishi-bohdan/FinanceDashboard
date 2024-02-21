@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace FinanceDashboard.Server.Model;
+﻿namespace FinanceDashboard.Shared.Models;
 
 public partial class Role
 {

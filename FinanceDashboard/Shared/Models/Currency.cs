@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
-namespace FinanceDashboard.Server.Model;
+namespace FinanceDashboard.Shared.Models;
 
 public partial class Currency
 {
