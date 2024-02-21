@@ -2,7 +2,7 @@
 {
     public class ChartData
     {
-        public string Month { get; set; } = null!;
+        public string Name { get; set; } = null!;
         public int Amount { get; set; }
     }
 }

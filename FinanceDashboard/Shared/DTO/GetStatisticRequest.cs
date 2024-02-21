@@ -1,4 +1,4 @@
-﻿namespace FinanceDashboard.Shared.DTO.Income
+﻿namespace FinanceDashboard.Shared.DTO
 {
     public class GetStatisticRequest
     {
