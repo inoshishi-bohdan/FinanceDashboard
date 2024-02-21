@@ -37,15 +37,6 @@
                             </Helper>
                         </RadzenFormField>
 
-                        <RadzenFormField Text="Surname" Variant="@variant">
-                            <ChildContent>
-                                <RadzenTextBox Name="Surname" @bind-Value="@model.Surname" />
-                            </ChildContent>
-                            <Helper>
-                                <RadzenRequiredValidator Component="Surname" Text="Surname is required." />
-                            </Helper>
-                        </RadzenFormField>
-
                         <RadzenFormField Text="Email" Variant="@variant">
                             <ChildContent>
                                 <RadzenTextBox Name="Email" @bind-Value="@model.Login" />
@@ -78,7 +69,6 @@
     Variant variant = Variant.Outlined;
 
     private RegisterRequest model = new RegisterRequest();
-    //private CustomAuthenticationStateProvider? customAuthStateProvider = null;
 
     async Task OnSubmit(RegisterRequest model)
     {

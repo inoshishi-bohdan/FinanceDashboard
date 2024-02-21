@@ -3,7 +3,6 @@
 @using FinanceDashboard.Client.Authentication;
 @using System.Net.Http.Headers;
 @using System.Globalization;
-@using FinanceDashboard.Server.Model;
 @using FinanceDashboard.Shared.DTO;
 @using FinanceDashboard.Shared.DTO.Expense;
 @using FinanceDashboard.Shared.DTO.Income;
@@ -36,7 +35,7 @@
         </RadzenCard>
 
         <RadzenChart ColorScheme="ColorScheme.Pastel">
-            <RadzenColumnSeries Title="@_incomesChartName" Data="@_incomesChartData" CategoryProperty="Month" LineType="LineType.Dashed" ValueProperty="Amount">
+            <RadzenColumnSeries Title="@_incomesChartName" Data="@_incomesChartData" CategoryProperty="Name" LineType="LineType.Dashed" ValueProperty="Amount">
                 <RadzenSeriesDataLabels Visible="@showDataLabels" />
             </RadzenColumnSeries>
             <RadzenColumnOptions Radius="5" />
@@ -59,8 +58,8 @@
             <RadzenDropDown Change="@(async args => UpdateExpensesChartData())" Data="@_expensesYears" @bind-Value="@_expensesSelectedYear" />
         </RadzenCard>
 
-        <RadzenChart ColorScheme="ColorScheme.Pastel">
-            <RadzenColumnSeries Title="@_expensesChartName" Data="@_expensesChartData" CategoryProperty="Month" LineType="LineType.Dashed" ValueProperty="Amount">
+        <RadzenChart ColorScheme="ColorScheme.Divergent">
+            <RadzenColumnSeries Title="@_expensesChartName" Data="@_expensesChartData" CategoryProperty="Name" LineType="LineType.Dashed" ValueProperty="Amount">
                 <RadzenSeriesDataLabels Visible="@showDataLabels" />
             </RadzenColumnSeries>
             <RadzenColumnOptions Radius="5" />
@@ -83,17 +82,17 @@
             <RadzenDropDown Change="@(async args => UpdateNetWorthChartData())" Data="@_incomesYears" @bind-Value="@_netWorthSelectedYear" />
         </RadzenCard>
 
-        <RadzenCheckBox @bind-Value="@trend" Name="trend"></RadzenCheckBox>
+        <RadzenCheckBox Disabled="_disableSubCharts" @bind-Value="@trend" Name="trend"></RadzenCheckBox>
         <RadzenLabel Text="Trend" Component="trend" Style="margin-right: 1rem;" class="rz-color-danger-dark" />
-        <RadzenCheckBox @bind-Value="@median" Name="median"></RadzenCheckBox>
+        <RadzenCheckBox Disabled="_disableSubCharts" @bind-Value="@median" Name="median"></RadzenCheckBox>
         <RadzenLabel Text="Median" Component="median" Style="margin-right: 1rem;" class="rz-color-success-dark" />
-        <RadzenCheckBox @bind-Value="@mean" Name="mean"></RadzenCheckBox>
+        <RadzenCheckBox Disabled="_disableSubCharts" @bind-Value="@mean" Name="mean"></RadzenCheckBox>
         <RadzenLabel Text="Mean" Component="mean" Style="margin-right: 1rem;" class="rz-color-info-dark" />
-        <RadzenCheckBox @bind-Value="@mode" Name="mode"></RadzenCheckBox>
+        <RadzenCheckBox Disabled="_disableSubCharts" @bind-Value="@mode" Name="mode"></RadzenCheckBox>
         <RadzenLabel Text="Mode" Component="mode" class="rz-color-warning-darker" />
 
         <RadzenChart>
-            <RadzenLineSeries Smooth="@smooth" Data="@_netWorthChartData" CategoryProperty="Month" Title="@_netWorthChartName" ValueProperty="Amount">
+            <RadzenLineSeries Smooth="@smooth" Data="@_netWorthChartData" CategoryProperty="Name" Title="@_netWorthChartName" ValueProperty="Amount">
                 <RadzenMarkers MarkerType="MarkerType.Circle" />
                 <RadzenSeriesTrendLine Visible="@trend" Stroke="var(--rz-danger-dark)" LineType="LineType.Dashed" />
                 <RadzenSeriesMedianLine Visible="@median" Stroke="var(--rz-success-dark)" LineType="LineType.Dotted" />
@@ -107,7 +106,22 @@
             </RadzenValueAxis>
             <RadzenLegend Visible="false" />
         </RadzenChart>
+    </div>
 
+    <div class="chart">
+        <h2>Expenses Distribution</h2>
+
+        <RadzenCard Variant="Variant.Flat" class="mt-4 w-100 mb-4 d-flex align-items-center" Style="gap: 0.5rem">
+            <RadzenLabel class="rz-ml-4" Text="Year" Style="margin-right: 8px; vertical-align: middle;" />
+            <RadzenDropDown Change="@(async args => UpdateExpenseDistributionChartData())" Data="@_expensesYears" @bind-Value="@_expenseDistributionSelectedYear" />
+
+            <RadzenLabel Text="Month" Style="margin-right: 8px; vertical-align: middle;" />
+            <RadzenDropDown Change="@(async args => UpdateExpenseDistributionChartData())" Data="@months" @bind-Value="@_selectedMonth" />
+        </RadzenCard>
+        <RadzenChart>
+            <RadzenPieSeries Data="@_expenseDistributionChartData" Title="Distribution" CategoryProperty="Name" ValueProperty="Amount">
+            </RadzenPieSeries>
+        </RadzenChart>
     </div>
 </div>
 
@@ -125,6 +139,7 @@
     private bool median = false;
     private bool mean = false;
     private bool mode = false;
+    private bool _disableSubCharts = true;
 
     private string? _expensesChartName;
     private string? _expensesAxisTitle;
@@ -159,6 +174,12 @@
     private int _netWorthStep = 100;
     private Dictionary<int, YearData> _netWorthChartDataCollection = new Dictionary<int, YearData>();
 
+    private Dictionary<int, Dictionary<string, List<ChartData>>> _expenseDistributionChartDataCollection = new Dictionary<int, Dictionary<string, List<ChartData>>>();
+    private List<ChartData>? _expenseDistributionChartData;
+    private List<string> months = new List<string> { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    private string? _selectedMonth;
+    private int _expenseDistributionSelectedYear;
+
     private string? userLogin;
     private List<Currency>? _currencies;
 
@@ -166,6 +187,11 @@
 
     private void UpdateIncomesChartData()
     {
+        _incomesSelectedCurrencyName = _currencies!.First(currency => currency.Id == _incomesSelectedCurencyId).Name;
+        _incomesAxisTitle = $"Income in {_incomesSelectedCurrencyName}";
+
+        if (_incomesSelectedYear == 0) return;
+
         if ((Currencies)_incomesSelectedCurencyId == Currencies.EUR)
         {
             _incomesChartData = _incomeChartDataCollection[_incomesSelectedYear].EURData;
@@ -176,14 +202,17 @@
         }
 
         _incomesChartName = $"{_incomesSelectedYear}";
-        _incomesSelectedCurrencyName = _currencies!.First(currency => currency.Id == _incomesSelectedCurencyId).Name;
-        _incomesAxisTitle = $"Income in {_incomesSelectedCurrencyName}";
         _incomeMax = GetChartMax(_incomesChartData);
         _incomeStep = GetChartStep(_incomeMax);
     }
 
     private void UpdateExpensesChartData()
     {
+        _expensesSelectedCurrencyName = _currencies!.First(currency => currency.Id == _expensesSelectedCurencyId).Name;
+        _expensesAxisTitle = $"Expense in {_expensesSelectedCurrencyName}";
+
+        if (_expensesSelectedYear == 0) return;
+
         if ((Currencies)_expensesSelectedCurencyId == Currencies.EUR)
         {
             _expensesChartData = _expenseChartDataCollection[_expensesSelectedYear].EURData;
@@ -194,14 +223,17 @@
         }
 
         _expensesChartName = $"{_expensesSelectedYear}";
-        _expensesSelectedCurrencyName = _currencies!.First(currency => currency.Id == _expensesSelectedCurencyId).Name;
-        _expensesAxisTitle = $"Expense in {_expensesSelectedCurrencyName}";
         _expenseMax = GetChartMax(_expensesChartData);
         _expenseStep = GetChartStep(_expenseMax);
     }
 
     private void UpdateNetWorthChartData()
     {
+        _netWorthSelectedCurrencyName = _currencies!.First(currency => currency.Id == _netWorthSelectedCurencyId).Name;
+        _netWorthAxisTitle = $"Net Worth in {_netWorthSelectedCurrencyName}";
+
+        if (_netWorthSelectedYear == 0) return;
+
         if ((Currencies)_netWorthSelectedCurencyId == Currencies.EUR)
         {
             _netWorthChartData = _netWorthChartDataCollection[_netWorthSelectedYear].EURData;
@@ -212,11 +244,16 @@
         }
 
         _netWorthChartName = $"{_netWorthSelectedYear}";
-        _netWorthSelectedCurrencyName = _currencies!.First(currency => currency.Id == _netWorthSelectedCurencyId).Name;
-        _netWorthAxisTitle = $"Net Worth in {_netWorthSelectedCurrencyName}";
         _netWorthMax = GetChartMax(_netWorthChartData);
         _netWorthMin = GetChartMin(_netWorthChartData);
         _netWorthStep = GetChartStep(_netWorthMax);
+    }
+
+    private void UpdateExpenseDistributionChartData()
+    {
+        if (_expenseDistributionSelectedYear == 0) return;
+
+        _expenseDistributionChartData = _expenseDistributionChartDataCollection[_expenseDistributionSelectedYear][_selectedMonth!];
     }
 
     private async Task<List<int>> GetIncomesYearsAsync(string userLogin)
@@ -252,7 +289,7 @@
                 break;
         }
 
-        var responseMessage = await Http.PostAsJsonAsync<FinanceDashboard.Shared.DTO.Income.GetStatisticRequest>($"api/statistic/{apiMethod}", new FinanceDashboard.Shared.DTO.Income.GetStatisticRequest { UserLogin = userLogin, Year = year});
+        var responseMessage = await Http.PostAsJsonAsync<GetStatisticRequest>($"api/statistic/{apiMethod}", new GetStatisticRequest { UserLogin = userLogin, Year = year});
 
         if (responseMessage.IsSuccessStatusCode)
         {
@@ -285,7 +322,7 @@
                 break;
         }
 
-        var responseMessage = await Http.PostAsJsonAsync<FinanceDashboard.Shared.DTO.Expense.GetStatisticRequest>($"api/statistic/{apiMethod}" ,new FinanceDashboard.Shared.DTO.Expense.GetStatisticRequest { UserLogin = userLogin, Year = year});
+        var responseMessage = await Http.PostAsJsonAsync<FinanceDashboard.Shared.DTO.GetStatisticRequest>($"api/statistic/{apiMethod}" ,new GetStatisticRequest { UserLogin = userLogin, Year = year});
 
         if (responseMessage.IsSuccessStatusCode)
         {
@@ -310,16 +347,16 @@
         switch (currencyId)
         {
             case (int)Currencies.EUR:
-                apiMethod = "incomeEUR";
+                apiMethod = "netWorthEUR";
                 break;
             case (int)Currencies.USD:
-                apiMethod = "incomeUSD";
+                apiMethod = "netWorthUSD";
                 break;
             default:
                 break;
         }
 
-        var responseMessage = await Http.PostAsJsonAsync<GetNetWorthStatisticRequest>($"api/statistic/{apiMethod}", new GetNetWorthStatisticRequest { UserLogin = userLogin, Year = year});
+        var responseMessage = await Http.PostAsJsonAsync<GetStatisticRequest>($"api/statistic/{apiMethod}", new GetStatisticRequest { UserLogin = userLogin, Year = year});
 
         if (responseMessage.IsSuccessStatusCode)
         {
@@ -335,10 +372,29 @@
         return chartData;
     }
 
+    private async Task<Dictionary<string, List<ChartData>>> GetFormattedExpenseDistributionAsync(string userLogin, int year)
+    {
+        Dictionary<string, List<ChartData>> chartData = new Dictionary<string, List<ChartData>>();
+        var responseMessage = await Http.PostAsJsonAsync<GetStatisticRequest>($"api/statistic/expenseCategories", new GetStatisticRequest { UserLogin = userLogin, Year = year});
+
+        if (responseMessage.IsSuccessStatusCode)
+        {
+            var content = await responseMessage.Content.ReadAsStringAsync();
+            chartData = JsonConvert.DeserializeObject<Dictionary<string, List<ChartData>>>(content)!;
+        }
+        else
+        {
+            var errorMessage = await responseMessage.Content.ReadAsStringAsync();
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = errorMessage, Duration = 4000 });
+        }
+
+        return chartData;
+    }
+
     private int GetChartMax(List<ChartData> items)
     {
         decimal maxAmount = 0;
-        int result = 0;
+        int result = 100;
 
         foreach (var item in items)
         {
@@ -370,13 +426,25 @@
 
         if (minAmount != 0)
         {
+            bool negative = false;
             var wholePart = Math.Truncate(minAmount);
             var stringForm = wholePart.ToString();
-            var firstDigit = stringForm[0] == '-' ? stringForm[1].ToString() : stringForm[0].ToString();
+            var firstDigit = stringForm[0] == '-' ? stringForm.Substring(0, 2) : stringForm[0].ToString();
             var k = int.Parse(firstDigit);
-            var n = stringForm.Length - 1;
 
-            result = (int)((k + 1) * (Math.Pow(10, n)));
+            if (k < 0) negative = true;
+
+            var n = negative ? stringForm.Length - 2 : stringForm.Length - 1;
+
+            if (negative)
+            {
+                result = (int)((k * (-1) + 1) * (Math.Pow(10, n)));
+                result *= -1;
+            }
+            else
+            {
+                result = (int)((k + 1) * (Math.Pow(10, n)));
+            }
         }
 
         return result;
@@ -414,6 +482,7 @@
             _incomesSelectedYear = _incomesYears!.Count != 0 ? _incomesYears.Last() : default;
             _expensesSelectedYear = _expensesYears!.Count != 0 ? _expensesYears.Last() : default;
             _netWorthSelectedYear = _incomesSelectedYear;
+            _expenseDistributionSelectedYear = _expensesSelectedYear;
 
             _currencies = await Http.GetFromJsonAsync<List<Currency>>("api/currency/list");
 
@@ -429,12 +498,15 @@
 
             List<ChartData> expEUR;
             List<ChartData> expUSD;
+            Dictionary<string, List<ChartData>> chartDistributionData;
             foreach (var year in _expensesYears)
             {
                 expEUR = await GetFormattedExpensesAsync((int)Currencies.EUR, userLogin!, year);
                 expUSD = await GetFormattedExpensesAsync((int)Currencies.USD, userLogin!, year);
-
                 _expenseChartDataCollection.Add(year, new YearData { EURData = expEUR, USDData = expUSD });
+
+                chartDistributionData = await GetFormattedExpenseDistributionAsync(userLogin!, year);
+                _expenseDistributionChartDataCollection.Add(year, chartDistributionData);
             }
 
             List<ChartData> nwtEUR;
@@ -447,9 +519,13 @@
                 _netWorthChartDataCollection.Add(year, new YearData { EURData = nwtEUR, USDData = nwtUSD });
             }
 
-            _incomesChartData = _incomeChartDataCollection[_incomesSelectedYear].EURData;
-            _expensesChartData = _expenseChartDataCollection[_expensesSelectedYear].EURData;
-            _netWorthChartData = _netWorthChartDataCollection[_netWorthSelectedYear].EURData;
+            _selectedMonth = "Jan";
+            _incomesChartData = _incomesSelectedYear == 0 ? new List<ChartData>() : _incomeChartDataCollection[_incomesSelectedYear].EURData;
+            _expensesChartData = _expensesSelectedYear == 0 ? new List<ChartData>() : _expenseChartDataCollection[_expensesSelectedYear].EURData;
+            _netWorthChartData = _netWorthSelectedYear == 0 ? new List<ChartData>() : _netWorthChartDataCollection[_netWorthSelectedYear].EURData;
+            _expenseDistributionChartData = _expensesSelectedYear == 0 ? new List<ChartData>() : _expenseDistributionChartDataCollection[_expenseDistributionSelectedYear][_selectedMonth];
+
+            if (_netWorthChartData.Count != 0) _disableSubCharts = false;
 
             _incomesChartName = $"{_incomesSelectedYear}";
             _expensesChartName = $"{_expensesSelectedYear}";
@@ -471,8 +547,8 @@
         }
         else
         {
-            navManager.NavigateTo("/login");
-            return;
+            await customAuthStateProvider.UpdateAuthenticationState(null);
+            navManager.NavigateTo("/login", true);
         }
     }
 }

@@ -3,9 +3,9 @@
 
 @using FinanceDashboard.Shared.DTO;
 @using FinanceDashboard.Client.Authentication;
-@using FinanceDashboard.Server.Model;
 @using FinanceDashboard.Shared;
 @using System.Net.Http.Headers;
+@using FinanceDashboard.Shared.Enums;
 @using FinanceDashboard.Shared.Models;
 @using Newtonsoft.Json;
 @using System.Text.Json;
@@ -21,7 +21,7 @@
 
 <h1>Incomes</h1>
 
-<RadzenButton Style="margin-bottom:8px; margin-top:5px;" Visible="_visibleButton" ButtonStyle="ButtonStyle.Secondary" Shade="Shade.Dark" Text="Add Income" Click="ShowForm"></RadzenButton>
+<RadzenButton Style="margin-bottom:8px; margin-top:5px;" Visible="_visibleButton" ButtonStyle="ButtonStyle.Success" Text="Add Income" Click="ShowForm"></RadzenButton>
 
 <div class="add-record-form">
     <RadzenTemplateForm TItem="CreateRequest" Data=@model Submit=@OnSubmit Visible="_visibleForm">
@@ -59,7 +59,7 @@
                 </Helper>
 
             </RadzenFormField>
-            <RadzenButton ButtonStyle="ButtonStyle.Primary" Shade="Shade.Light" ButtonType="Radzen.ButtonType.Submit" Text="Submit"></RadzenButton>
+            <RadzenButton ButtonStyle="ButtonStyle.Success" Shade="Shade.Light" ButtonType="Radzen.ButtonType.Submit" Text="Submit"></RadzenButton>
             <RadzenButton Click="CloseForm" ButtonStyle="ButtonStyle.Primary" Shade="Shade.Lighter" Text="Cancel"></RadzenButton>
         </RadzenStack>
     </RadzenTemplateForm>
@@ -169,8 +169,22 @@
 
         if (response.IsSuccessStatusCode)
         {
-            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly added", Duration = 4000 });
+            var content = await response.Content.ReadAsStringAsync();
+            var recordId = JsonConvert.DeserializeObject<CreateResponse>(content)!.Id;
+            var newRecord = new IncomeData
+                {
+                    Id = recordId,
+                    Date = model.Date!.Value,
+                    Description = model.Description,
+                    Amount = Math.Round(model.Amount!.Value, 2),
+                    Currency = ((Currencies)model.CurrencyId!.Value).ToString(),
+                    CurrencyId = model.CurrencyId!.Value
+                };
 
+            listOfData!.Add(newRecord);
+            editCache[newRecord.Id] = (false, newRecord);
+
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly added", Duration = 4000 });
         }
         else
         {
@@ -232,6 +246,7 @@
         {
             ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly updated", Duration = 4000 });
 
+            editCache[id].data.Amount = Math.Round(editCache[id].data.Amount, 2);
             listOfData[index] = editCache[id].data; // apply the copy to data source
             editCache[id] = (false, listOfData[index]); // don't affect rows in editing
         }
@@ -312,8 +327,8 @@
         }
         else
         {
-            navManager.NavigateTo("/login");
-            return;
+            await customAuthStateProvider.UpdateAuthenticationState(null);
+            navManager.NavigateTo("/login", true);
         }
     }
 }

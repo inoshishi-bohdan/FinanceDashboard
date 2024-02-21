@@ -63,6 +63,11 @@ a, .btn-link {
         content: "An error has occurred."
     }
 
+.card-group {
+    padding-top: 15px;
+    padding-bottom: 30px;
+}
+
 
 .save {
     margin-right: 8px;
@@ -70,7 +75,7 @@ a, .btn-link {
 
 @media only screen and (min-width: 992px) {
     .add-record-form {
-        width: 35vw; 
+        width: 35vw;
     }
 }
 
@@ -80,8 +85,11 @@ a, .btn-link {
         display: flex;
         flex-wrap: wrap;
     }
+
     .chart {
         flex: 0 0 50%;
-        padding:15px;
+        padding: 15px;
+        border: 2px solid rgb(246, 247, 250);
+        border-radius: 5px;
     }
 }

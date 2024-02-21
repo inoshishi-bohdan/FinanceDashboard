@@ -14,12 +14,59 @@
     <Authorized>
         <h1>Hello, @context?.User?.Identity?.Name! &#x1F44B;</h1>
         <h5>Let's organize your finances &#10024;</h5>
-
+        <div class="card-group">
+            <div class="card">
+                <img src="/images/incomes.jpg" class="card-img-top" alt="money image">
+                <div class="card-body">
+                    <h5 class="card-title">My Incomes</h5>
+                    <p class="card-text">Elevate your financial management with our Incomes page. Easily add, organize, and analyze your sources of income, providing you with a comprehensive overview of your financial success.</p>
+                </div>
+                <div class="card-footer">
+                    <button type="button" style="width: 100%; background-color: rgb(55, 109, 245)" class="btn btn-primary btn-lg" onclick="@(() => GoToIncomesPage())">Go to page</button>
+                </div>
+            </div>
+            <div class="card">
+                <img src="/images/expenses.jpg" class="card-img-top" alt="expense image">
+                <div class="card-body">
+                    <h5 class="card-title">My Expenses</h5>
+                    <p class="card-text">Effortlessly manage, categorize, and track your expenses with our intuitive web app. Add, update, and delete transactions with ease, ensuring a streamlined financial experience.</p>
+                </div>
+                <div class="card-footer">
+                    <button type="button" style="width: 100%; background-color: rgb(55, 109, 245)" class="btn btn-primary btn-lg" onclick="@(() => GoToExpensesPage())">Go to page</button>
+                </div>
+            </div>
+            <div class="card">
+                <img src="/images/statistics.jpg" class="card-img-top" alt="statistic image">
+                <div class="card-body">
+                    <h5 class="card-title"> My statistics</h5>
+                    <p class="card-text">Unlock insights into your financial journey with our Statistics page. Visualize your income, expenses, and net worth through interactive charts, empowering you to make informed decisions and achieve your financial goals.</p>
+                </div>
+                <div class="card-footer">
+                    <button type="button" style="width: 100%; background-color: rgb(55, 109, 245)" class="btn btn-primary btn-lg" onclick="@(() => GoToStatisticsPage())">Go to page</button>
+                </div>
+            </div>
+        </div>
     </Authorized>
 </AuthorizeView>
 
 
 @code {
+
+    private void GoToIncomesPage()
+    {
+        navManager.NavigateTo("/incomes");
+    }
+
+    private void GoToExpensesPage()
+    {
+        navManager.NavigateTo("/expenses");
+    }
+
+    private void GoToStatisticsPage()
+    {
+        navManager.NavigateTo("/statistics");
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -28,8 +75,8 @@
         var token = await customAuthStateProvider.GetToken();
         if (string.IsNullOrWhiteSpace(token))
         {
-            navManager.NavigateTo("/login");
-            return;
+            await customAuthStateProvider.UpdateAuthenticationState(null);
+            navManager.NavigateTo("/login", true);
         }
     }
 }
