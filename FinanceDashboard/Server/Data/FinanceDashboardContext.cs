@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using FinanceDashboard.Server.Model;
+﻿using FinanceDashboard.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinanceDashboard.Server.Data;
@@ -93,7 +91,6 @@ public partial class FinanceDashboardContext : DbContext
             entity.Property(e => e.Login).HasMaxLength(50);
             entity.Property(e => e.Name).HasMaxLength(50);
             entity.Property(e => e.Password).HasMaxLength(250);
-            entity.Property(e => e.Surname).HasMaxLength(50);
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)

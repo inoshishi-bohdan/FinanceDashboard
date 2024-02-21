@@ -1,6 +1,6 @@
 ﻿using FinanceDashboard.Server.Authentication;
 using FinanceDashboard.Server.Data;
-using FinanceDashboard.Server.Model;
+using FinanceDashboard.Shared.Models;
 using FinanceDashboard.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -59,8 +59,7 @@ namespace FinanceDashboard.Server.Controllers
             var jwtAuthenticationManager = new JwtAuthenticationManager(_userAccountService);        
             var newUser = new User
             {
-                Name = request.Name ?? "User",
-                Surname = request.Surname ?? rand.Next().ToString(),
+                Name = request.Name ?? $"User{ rand.Next()}",
                 Login = request.Login!,
                 Password = jwtAuthenticationManager.GetHashedPassword(request.Password!),
                 RoleId = 1

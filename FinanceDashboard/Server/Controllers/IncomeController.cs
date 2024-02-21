@@ -1,7 +1,6 @@
 ﻿using FinanceDashboard.Server.Data;
-using FinanceDashboard.Server.Model;
-using FinanceDashboard.Shared.DTO.Income;
 using FinanceDashboard.Shared.Models;
+using FinanceDashboard.Shared.DTO.Income;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -33,15 +32,18 @@ namespace FinanceDashboard.Server.Controllers
 
             if (validator.Any()) return validator.BadRequest();
 
-            var result = await _financeDashboardContext.Incomes.AsQueryable().Where(income => income.User.Login.Equals(request.UserLogin))
-                .Include(income => income.Currency).Select(income => new IncomeData 
-                { 
+            var user =  await _financeDashboardContext.Users.AsQueryable().FirstOrDefaultAsync(user => user.Login == request.UserLogin);
+            if (user == null) return BadRequest($"User with login {request.UserLogin} not found");
+
+            var result = await _financeDashboardContext.Incomes.AsQueryable().Where(income => income.User.Login == request.UserLogin)
+                .Include(income => income.Currency).Select(income => new IncomeData
+                {
                     Id = income.Id,
                     Date = income.Date,
                     Description = income.Description,
                     Currency = income.Currency.Name,
                     CurrencyId = income.CurrencyId,
-                    Amount = income.Amount
+                    Amount = Math.Round(income.Amount, 2)
                 }).ToListAsync();
 
             return Ok(result);
@@ -63,17 +65,19 @@ namespace FinanceDashboard.Server.Controllers
 
             if (validator.Any()) return validator.BadRequest();
 
+            var currency = await _financeDashboardContext.Currencies.FindAsync(request.CurrencyId);
+            if (currency == null) return BadRequest($"Currency with Id = {request.CurrencyId} not found");
+
             if (request.Amount <= 0) return BadRequest($"Amount can not be equal to 0 or less");
 
             var incomeRecord = await _financeDashboardContext.Incomes.AsQueryable().FirstAsync(income => income.Id == request.Id);
-
             if (incomeRecord == null) return BadRequest($"Income record not found (id = {request.Id})");
 
             incomeRecord.Date = request.Date!.Value;
             incomeRecord.Description = request.Description;
-            incomeRecord.Amount = request.Amount!.Value;
+            incomeRecord.Amount = Math.Round(request.Amount!.Value, 2);
             incomeRecord.CurrencyId = request.CurrencyId!.Value;
-            
+
             await _financeDashboardContext.SaveChangesAsync();
 
             return Ok();
@@ -93,11 +97,10 @@ namespace FinanceDashboard.Server.Controllers
             if (validator.Any()) return validator.BadRequest();
 
             var incomeRecord = await _financeDashboardContext.Incomes.AsQueryable().FirstAsync(income => income.Id == request.Id);
-
             if (incomeRecord == null) return BadRequest($"Income record not found (id = {request.Id})");
 
             _financeDashboardContext.Incomes.Remove(incomeRecord);
-            
+
             await _financeDashboardContext.SaveChangesAsync();
 
             return Ok();
@@ -105,7 +108,7 @@ namespace FinanceDashboard.Server.Controllers
 
         [HttpPost("create")]
         [Authorize(Roles = "Customer")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CreateResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateIncomeAsync([FromBody] CreateRequest request)
         {
@@ -119,24 +122,28 @@ namespace FinanceDashboard.Server.Controllers
 
             if (validator.Any()) return validator.BadRequest();
 
+            var user =  await _financeDashboardContext.Users.AsQueryable().FirstOrDefaultAsync(user => user.Login == request.UserLogin);
+            if (user == null) return BadRequest($"User with login {request.UserLogin} not found");
+
+            var currency = await _financeDashboardContext.Currencies.FindAsync(request.CurrencyId);
+            if (currency == null) return BadRequest($"Currency with Id = {request.CurrencyId} not found");
+
             if (request.Amount <= 0) return BadRequest($"Amount can not be equal to 0 or less");
 
-            var userId = (await _financeDashboardContext.Users.AsQueryable().FirstAsync(user => user.Login.Equals(request.UserLogin))).Id;
-            
             var incomeRecord = new Income()
             {
-                UserId = userId,
+                UserId = user.Id,
                 Date = request.Date!.Value,
                 Description = request.Description,
-                Amount = request.Amount!.Value,
+                Amount =  Math.Round(request.Amount!.Value, 2),
                 CurrencyId = request.CurrencyId!.Value
             };
 
             _financeDashboardContext.Incomes.Add(incomeRecord);
-            
+
             await _financeDashboardContext.SaveChangesAsync();
 
-            return Ok();
+            return Ok(new CreateResponse { Id = incomeRecord.Id });
         }
     }
 }

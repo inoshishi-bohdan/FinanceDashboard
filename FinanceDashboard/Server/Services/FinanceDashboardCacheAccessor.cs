@@ -1,5 +1,5 @@
 ﻿using FinanceDashboard.Server.Data;
-using FinanceDashboard.Server.Model;
+using FinanceDashboard.Shared.Models;
 
 namespace FinanceDashboard.Server.Services
 {

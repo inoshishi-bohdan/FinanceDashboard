@@ -1,5 +1,5 @@
 ﻿using FinanceDashboard.Server.Data;
-using FinanceDashboard.Server.Model;
+using FinanceDashboard.Shared.Models;
 using FinanceDashboard.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,12 +10,10 @@ namespace FinanceDashboard.Server.Controllers
     [ApiController]
     public class CurrencyController : ControllerBase
     {
-        private readonly FinanceDashboardContext _financeDashboardContext;
         private readonly FinanceDashboardCacheAccessor _cacheAccessor;
 
-        public CurrencyController(FinanceDashboardContext financeDashboardContext, FinanceDashboardCacheAccessor cacheAccessor)
+        public CurrencyController(FinanceDashboardCacheAccessor cacheAccessor)
         {
-            _financeDashboardContext = financeDashboardContext;
             _cacheAccessor = cacheAccessor;
         }
         [HttpGet("list")]

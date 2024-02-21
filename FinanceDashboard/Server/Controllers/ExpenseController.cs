@@ -1,8 +1,7 @@
 ﻿using FinanceDashboard.Server.Data;
-using FinanceDashboard.Server.Model;
+using FinanceDashboard.Shared.Models;
 using FinanceDashboard.Server.Services;
 using FinanceDashboard.Shared.DTO.Expense;
-using FinanceDashboard.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +41,9 @@ namespace FinanceDashboard.Server.Controllers
 
             if (validator.Any()) return validator.BadRequest();
 
+            var user =  await _financeDashboardContext.Users.AsQueryable().FirstOrDefaultAsync(user => user.Login == request.UserLogin);
+            if (user == null) return BadRequest($"User with login {request.UserLogin} not found");
+
             var result = await _financeDashboardContext.Expenses.AsQueryable().Where(expense => expense.User.Login == request.UserLogin)
                 .Include(expense => expense.ExpenseCategory)
                 .Include(expense => expense.Currency).Select(expense => new ExpenseData
@@ -53,7 +55,7 @@ namespace FinanceDashboard.Server.Controllers
                     ExpenseCategoryId = expense.ExpenseCategory.Id,
                     Currency = expense.Currency.Name,
                     CurrencyId = expense.Currency.Id,
-                    Amount = expense.Amount
+                    Amount =  Math.Round(expense.Amount, 2) 
                 }).ToListAsync();
 
             return Ok(result);
@@ -76,15 +78,20 @@ namespace FinanceDashboard.Server.Controllers
 
             if (validator.Any()) return validator.BadRequest();
 
+            var currency = await _financeDashboardContext.Currencies.FindAsync(request.CurrencyId);
+            if (currency == null) return BadRequest($"Currency with Id = {request.CurrencyId} not found");
+
+            var expenseCategory = await _financeDashboardContext.ExpenseCategories.FindAsync(request.ExpenseCategoryId);
+            if (expenseCategory == null) return BadRequest($"Expense Category with Id = {request.ExpenseCategoryId} not found");
+
             if (request.Amount <= 0) return BadRequest($"Amount can not be equal to 0 or less");
 
-            var expenseRecord = await _financeDashboardContext.Expenses.AsQueryable().FirstAsync(expense => expense.Id == request.Id);
-            
+            var expenseRecord = await _financeDashboardContext.Expenses.AsQueryable().FirstAsync(expense => expense.Id == request.Id);     
             if (expenseRecord == null) return BadRequest($"Expense record not found (id = {request.Id})");
 
             expenseRecord.Date = request.Date!.Value;
             expenseRecord.Description = request.Description;
-            expenseRecord.Amount = request.Amount!.Value;
+            expenseRecord.Amount = Math.Round(request.Amount!.Value, 2);
             expenseRecord.CurrencyId = request.CurrencyId!.Value;
             expenseRecord.ExpenseCategoryId = request.ExpenseCategoryId!.Value;
 
@@ -107,7 +114,6 @@ namespace FinanceDashboard.Server.Controllers
             if (validator.Any()) return validator.BadRequest();
 
             var expenseRecord = await _financeDashboardContext.Expenses.AsQueryable().FirstAsync(expense => expense.Id == request.Id);
-
             if (expenseRecord == null) return BadRequest($"Expense record not found (id = {request.Id})");
 
             _financeDashboardContext.Expenses.Remove(expenseRecord);
@@ -119,7 +125,7 @@ namespace FinanceDashboard.Server.Controllers
 
         [HttpPost("create")]
         [Authorize(Roles = "Customer")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CreateResponse),StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateExpenseAsync([FromBody] CreateRequest request)
         {
@@ -134,16 +140,23 @@ namespace FinanceDashboard.Server.Controllers
 
             if (validator.Any()) return validator.BadRequest();
 
-            if (request.Amount <= 0) return BadRequest($"Amount can not be equal to 0 or less");
+            var user =  await _financeDashboardContext.Users.AsQueryable().FirstOrDefaultAsync(user => user.Login == request.UserLogin);
+            if (user == null) return BadRequest($"User with login {request.UserLogin} not found");
 
-            var userId = (await _financeDashboardContext.Users.AsQueryable().FirstAsync(user => user.Login.Equals(request.UserLogin))).Id;
+            var currency = await _financeDashboardContext.Currencies.FindAsync(request.CurrencyId);
+            if (currency == null) return BadRequest($"Currency with Id = {request.CurrencyId} not found");
+
+            var expenseCategory = await _financeDashboardContext.ExpenseCategories.FindAsync(request.ExpenseCategoryId);
+            if (expenseCategory == null) return BadRequest($"Expense Category with Id = {request.ExpenseCategoryId} not found");
+
+            if (request.Amount <= 0) return BadRequest($"Amount can not be equal to 0 or less");
 
             var expenseRecord = new Expense()
             {
-                UserId = userId,
+                UserId = user.Id,
                 Date = request.Date!.Value,
                 Description = request.Description,
-                Amount = request.Amount!.Value,
+                Amount =  Math.Round(request.Amount!.Value, 2),
                 ExpenseCategoryId = request.ExpenseCategoryId!.Value,
                 CurrencyId = request.CurrencyId!.Value
             };
@@ -152,7 +165,7 @@ namespace FinanceDashboard.Server.Controllers
 
             await _financeDashboardContext.SaveChangesAsync();
 
-            return Ok();
+            return Ok(new CreateResponse { Id = expenseRecord.Id });
         }
     }
 }

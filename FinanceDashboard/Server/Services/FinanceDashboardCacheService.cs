@@ -1,6 +1,6 @@
 ﻿using FinanceDashboard.Server.Cache;
 using FinanceDashboard.Server.Data;
-using FinanceDashboard.Server.Model;
+using FinanceDashboard.Shared.Models;
 using FinanceDashboard.Shared.DTO;
 using Microsoft.EntityFrameworkCore;
 
