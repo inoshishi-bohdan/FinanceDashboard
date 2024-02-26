@@ -3,6 +3,8 @@
 
 @inject AuthenticationStateProvider authStateProvider;
 @inject NavigationManager navManager;
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject Radzen.NotificationService NotificationService
 
 
 
@@ -15,6 +17,8 @@
         <div class="top-row px-4">
             <AuthorizeView>
                 <Authorized>
+                    <Avatar Src="@userImagePath" Style="margin-right: 15px;" Size="large" Shape="@AvatarShape.Square" Icon="user" />
+                    <button onclick="@(() => GoToSettingsPage())" type="button" class="btn btn-outline-secondary">@userLogin</button>
                     <a @onclick="Logout" href="javascript:void(0)">LOG OUT</a>
                 </Authorized>
                 <NotAuthorized>
@@ -23,7 +27,6 @@
                 </NotAuthorized>
             </AuthorizeView>
         </div>
-
         <article style="" class="content px-4">
             @Body
         </article>
@@ -32,6 +35,28 @@
 <RadzenComponents />
 
 @code {
+    private string? userLogin;
+    private string userImagePath = "/images/profiles/profile0.png";
+
+    private void GoToSettingsPage()
+    {
+        navManager.NavigateTo("/settings");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
+        var authState = await customAuthStateProvider.GetAuthenticationStateAsync();
+        userLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
+        var imagePath = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("uri"))?.Value!;
+        if (imagePath != string.Empty)
+        {
+            userImagePath = $"/images/profiles/{imagePath}";
+        }
+    }
+
     private async Task Logout()
     {
         var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;

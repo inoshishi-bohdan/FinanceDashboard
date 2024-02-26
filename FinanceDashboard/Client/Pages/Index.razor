@@ -12,7 +12,14 @@
 
 <AuthorizeView>
     <Authorized>
-        <h1>Hello, @context?.User?.Identity?.Name! &#x1F44B;</h1>
+        @if (@context?.User?.Identity?.Name! == string.Empty)
+        {
+            <h1>Hello! &#x1F44B;</h1>
+        }
+        else
+        {
+            <h1>Hello, @context?.User?.Identity?.Name! &#x1F44B;</h1>
+        }
         <h5>Let's organize your finances &#10024;</h5>
         <div class="card-group">
             <div class="card">

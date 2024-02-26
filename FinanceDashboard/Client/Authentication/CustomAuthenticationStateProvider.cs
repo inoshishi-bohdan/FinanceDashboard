@@ -27,7 +27,8 @@ namespace FinanceDashboard.Client.Authentication
                 {
                     new Claim(ClaimTypes.Name, userSession.UserName!),
                     new Claim(ClaimTypes.Role, userSession.Role),
-                    new Claim(ClaimTypes.Email, userSession.UserLogin)
+                    new Claim(ClaimTypes.Email, userSession.UserLogin),
+                    new Claim(ClaimTypes.Uri, userSession.ImagePath!)
                 }, "JwtAuth"));
 
                 return await Task.FromResult(new AuthenticationState(claimsPrincipal));
@@ -46,9 +47,10 @@ namespace FinanceDashboard.Client.Authentication
             {
                 claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>
                 {
-                    new Claim(ClaimTypes.Name, userSession.UserName!),
+                    new Claim(ClaimTypes.Name, userSession.UserName),
                     new Claim(ClaimTypes.Role, userSession.Role),
-                    new Claim(ClaimTypes.Email, userSession.UserLogin)
+                    new Claim(ClaimTypes.Email, userSession.UserLogin),
+                    new Claim(ClaimTypes.Uri, userSession.ImagePath)
                 }));
                 userSession.ExpiryTimeStamp = DateTime.UtcNow.AddSeconds(userSession.ExpiresIn);
                 await _sessionStorage.SaveItemEncryptedAsync("UserSession", userSession);

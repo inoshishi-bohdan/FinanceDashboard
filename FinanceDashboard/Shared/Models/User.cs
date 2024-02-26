@@ -12,7 +12,11 @@ public partial class User
 
     public int RoleId { get; set; }
 
+    public int? ImageId { get; set; }
+
     public virtual ICollection<Expense> Expenses { get; set; } = new List<Expense>();
+
+    public virtual Image? Image { get; set; }
 
     public virtual ICollection<Income> Incomes { get; set; } = new List<Income>();
 

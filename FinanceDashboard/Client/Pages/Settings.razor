@@ -1,0 +1,189 @@
+﻿@page "/settings"
+@attribute [Authorize(Roles = "Customer")]
+
+
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject NavigationManager navManager
+@inject HttpClient Http
+@inject Radzen.NotificationService NotificationService
+
+@using FinanceDashboard.Client.Authentication;
+@using FinanceDashboard.Shared.DTO.User;
+@using System.Net.Http.Headers;
+
+
+<h1>Settings</h1>
+
+<RadzenCard Class="rz-my-12 rz-mx-auto rx-px-5 profile-card">
+    <RadzenStack AlignItems="AlignItems.Center" Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Start" Gap="1rem" Class="rz-p-4">
+        <RadzenImage id="userImage" Path="/images/profiles/profile0.png" Style="width: 130px; height: 130px;  border-radius: 50%;" />
+        <RadzenStack Style="width:50%" Gap="0">
+            <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-my-05">User Name</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1"><p style="font-size: 1.5rem; font-weight:bold; width: inherit; word-wrap:break-word">@userName</p></RadzenText>
+            <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-4 rz-mb-05">Email</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1"><p style="font-size: 1.5rem; font-weight:bold; width: inherit; word-wrap:break-word">@userLogin</p></RadzenText>
+        </RadzenStack>
+
+    </RadzenStack>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="10">
+        <RadzenButton Shade="Shade.Lighter" Visible="@showEditProfileButton" Click=@(args => ShowEditProfileForm()) Text="Edit Profile" ButtonStyle="ButtonStyle.Success" />
+    </RadzenStack>
+
+    <RadzenTemplateForm TItem="UpdateRequest" Data=@updateUserModel Submit=@EditUser Visible="showEditProfileForm">
+        <RadzenStack Gap="1rem" Class="rz-px-5 rz-py-12">
+            <h5>Edit Profile</h5>
+            <RadzenStack Wrap="FlexWrap.Wrap" AlignItems="AlignItems.Center" Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="1rem" Class="rz-p-4">
+                <RadzenImage id="image-option1" Click="@(() => SelectImage("profile1.jpg", "image-option1"))" class="image-option" Path="/images/profiles/profile1.jpg" />
+                <RadzenImage id="image-option2" Click="@(() => SelectImage("profile2.jpg", "image-option2"))" class="image-option" Path="/images/profiles/profile2.jpg" />
+                <RadzenImage id="image-option3" Click="@(() => SelectImage("profile3.jpg", "image-option3"))" class="image-option" Path="/images/profiles/profile3.jpg" />
+                <RadzenImage id="image-option4" Click="@(() => SelectImage("profile4.jpg", "image-option4"))" class="image-option" Path="/images/profiles/profile4.jpg" />
+            </RadzenStack>
+            <RadzenFormField Text="New Name" Variant="Variant.Outlined">
+                <ChildContent>
+                    <RadzenTextBox @bind-Value=@updateUserModel.NewName />
+                </ChildContent>
+            </RadzenFormField>
+
+            <RadzenFormField Text="New Email" Variant="Variant.Outlined">
+                <ChildContent>
+                    <RadzenTextBox Name="Email" @bind-Value=@updateUserModel.NewLogin />
+                </ChildContent>
+                <Helper>
+                    <RadzenEmailValidator Component="Email" Text="Wrong format" />
+                </Helper>
+            </RadzenFormField>
+
+            <RadzenFormField Text="New Password" Variant="Variant.Outlined">
+                <ChildContent>
+                    <RadzenPassword Name="NewPassword" @bind-Value=@updateUserModel.NewPassword />
+                </ChildContent>
+            </RadzenFormField>
+
+            <RadzenFormField Text="Repeat Password" Variant="Variant.Outlined">
+                <ChildContent>
+                    <RadzenPassword Name="RepeatedPassword" @bind-Value=@updateUserModel.RepeatedPassword />
+                </ChildContent>
+                <Helper>
+                    <RadzenCustomValidator Component="RepeatedPassword" Validator="@(() => ValidatePassword())" Text="Passwords not match" />
+                </Helper>
+            </RadzenFormField>
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Start" Gap="10">
+                <RadzenButton ButtonStyle="ButtonStyle.Success" Shade="Shade.Light" ButtonType="Radzen.ButtonType.Submit" Text="Update"></RadzenButton>
+                <RadzenButton Click="CloseEditProfileForm" ButtonStyle="ButtonStyle.Primary" Shade="Shade.Lighter" Text="Cancel"></RadzenButton>
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenTemplateForm>
+
+</RadzenCard>
+
+@code {
+    [Inject]
+    IJSRuntime? JSRuntime { get; set; }
+}
+
+@code {
+    private bool showEditProfileButton = true;
+    private bool showEditProfileForm = false;
+    private UpdateRequest updateUserModel = new UpdateRequest();
+
+    private string? userLogin;
+    private string? userName;
+    private string? userImagePath;
+
+    private void ShowEditProfileForm()
+    {
+        updateUserModel = new UpdateRequest();
+        showEditProfileButton = false;
+        showEditProfileForm = true;
+    }
+
+    private void CloseEditProfileForm()
+    {
+        showEditProfileButton = true;
+        showEditProfileForm = false;
+    }
+
+    private async Task EditUser()
+    {
+        updateUserModel.Login = userLogin;
+        var response = await Http.PostAsJsonAsync("api/account/edit", updateUserModel);
+
+        if (response.IsSuccessStatusCode)
+        {
+            if (updateUserModel.NewLogin != null) userLogin = updateUserModel.NewLogin;
+
+            if (updateUserModel.NewName != null) userName = updateUserModel.NewName;
+
+            CloseEditProfileForm();
+            StateHasChanged();
+
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success Summary", Detail = "Record was successfuly updated", Duration = 4000 });
+
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Info Summary", Detail = "You will be redirected to Log In form within the seconds", Duration = 5000 });
+            await Task.Delay(3000);
+
+            var customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
+            await customAuthStateProvider.UpdateAuthenticationState(null);
+            navManager.NavigateTo("/login", true);
+        }
+        else
+        {
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = errorMessage, Duration = 4000 });
+        }
+    }
+
+    private bool ValidatePassword()
+    {
+        return updateUserModel.NewPassword == updateUserModel.RepeatedPassword;
+    }
+
+    private void ShowNotification(NotificationMessage message)
+    {
+        NotificationService.Notify(message);
+    }
+
+    private async Task ChangeImageSource()
+    {
+        // Call JavaScript function to change the image source
+        await JSRuntime!.InvokeVoidAsync("changeImageSource", "userImage", userImagePath);
+    }
+
+    private async Task SelectImage(string newImagePath, string imageId)
+    {
+        if (userImagePath != newImagePath)
+        {
+            userImagePath = newImagePath;
+
+            await JSRuntime!.InvokeVoidAsync("changeImageSource", "userImage", userImagePath);
+
+            await JSRuntime!.InvokeVoidAsync("selectImage", imageId);
+            
+            updateUserModel.NewUserImagePath = newImagePath;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
+        var token = await customAuthStateProvider.GetToken();
+        var authState = await customAuthStateProvider.GetAuthenticationStateAsync();
+        userLogin = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("emailaddress"))?.Value;
+        userName = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("name"))?.Value;
+        userImagePath = authState?.User.Identities?.First()?.Claims?.FirstOrDefault(item => item.Type.Contains("uri"))?.Value!;
+        await ChangeImageSource();
+
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token);
+        }
+        else
+        {
+            await customAuthStateProvider.UpdateAuthenticationState(null);
+            navManager.NavigateTo("/login", true);
+        }
+    }
+}

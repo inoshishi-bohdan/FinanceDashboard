@@ -68,22 +68,56 @@ a, .btn-link {
     padding-bottom: 30px;
 }
 
-
 .save {
     margin-right: 8px;
 }
 
-@media only screen and (min-width: 992px) {
+.profile-card {
+    width: 100%;
+}
+
+
+.image-option {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+}
+
+
+.selected {
+    border: 2px solid dodgerblue; /* Adjust border color and width as needed */
+    box-shadow: 0 0 10px dodgerblue; /* Glow effect, adjust the size and color as needed */
+    transition: border 0.3s, box-shadow 0.3s; /* Add a smooth transition effect */
+}
+
+@media only screen and (max-width: 600px) {
+    .image-option {
+        width: 70px;
+        height: 70px;
+    }
+}
+
+
+@media only screen and (min-width: 992px) and (max-width: 2200px) {
     .add-record-form {
-        width: 35vw;
+        max-width: 35vw;
+    }
+    .profile-card {
+        max-width: 43vw;
     }
 }
 
 
 @media only screen and (min-width: 2200px) {
-    .statistic {
+    .statistic  {
         display: flex;
         flex-wrap: wrap;
+    }
+    .add-record-form {
+        max-width: 23vw;
+    }
+    .profile-card {
+        max-width: 37vw;
     }
 
     .chart {

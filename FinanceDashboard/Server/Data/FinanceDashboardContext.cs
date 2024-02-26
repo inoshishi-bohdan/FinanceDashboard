@@ -20,6 +20,8 @@ public partial class FinanceDashboardContext : DbContext
 
     public virtual DbSet<ExpenseCategory> ExpenseCategories { get; set; }
 
+    public virtual DbSet<Image> Images { get; set; }
+
     public virtual DbSet<Income> Incomes { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
@@ -62,6 +64,11 @@ public partial class FinanceDashboardContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(50);
         });
 
+        modelBuilder.Entity<Image>(entity =>
+        {
+            entity.Property(e => e.Path).HasMaxLength(50);
+        });
+
         modelBuilder.Entity<Income>(entity =>
         {
             entity.Property(e => e.Amount).HasColumnType("money");
@@ -91,6 +98,10 @@ public partial class FinanceDashboardContext : DbContext
             entity.Property(e => e.Login).HasMaxLength(50);
             entity.Property(e => e.Name).HasMaxLength(50);
             entity.Property(e => e.Password).HasMaxLength(250);
+
+            entity.HasOne(d => d.Image).WithMany(p => p.Users)
+                .HasForeignKey(d => d.ImageId)
+                .HasConstraintName("FK_Users_Images");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)

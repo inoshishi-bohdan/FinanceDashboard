@@ -53,6 +53,7 @@ namespace FinanceDashboard.Server.Authentication
                 UserName = userAccount.UserName,
                 UserLogin = userAccount.UserLogin,
                 Role = userAccount.Role,
+                ImagePath = userAccount.ImagePath,
                 Token = token,
                 ExpiresIn = (int)tokenExpiryTimeStamp.Subtract(DateTime.UtcNow).TotalSeconds
             };
