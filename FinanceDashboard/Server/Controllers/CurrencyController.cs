@@ -1,5 +1,4 @@
-﻿using FinanceDashboard.Server.Data;
-using FinanceDashboard.Shared.Models;
+﻿using FinanceDashboard.Shared.Models;
 using FinanceDashboard.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

@@ -56,7 +56,7 @@
                                 <RadzenRequiredValidator Component="Password" Text="Password is required." />
                             </Helper>
                         </RadzenFormField>
-                        <RadzenButton ButtonStyle="ButtonStyle.Primary" ButtonType="Radzen.ButtonType.Submit" Text="Submit"></RadzenButton>
+                        <RadzenButton Disabled="_disableRegisterButton" ButtonStyle="ButtonStyle.Primary" ButtonType="Radzen.ButtonType.Submit" Text="Submit"></RadzenButton>
                     </RadzenStack>
                 </RadzenTemplateForm>
             </div>
@@ -71,15 +71,18 @@
     Variant variant = Variant.Outlined;
 
     private RegisterRequest model = new RegisterRequest();
+    private bool _disableRegisterButton = false;
 
     async Task OnSubmit(RegisterRequest model)
     {
+        _disableRegisterButton = true;
         var userExistResponse = await httpClient.PostAsJsonAsync("/api/Account/UserExist", new UserExistenceRequest { Login = model.Login});
         var userExistResponseContent = await userExistResponse.Content.ReadAsStringAsync();
         var userExist = JsonConvert.DeserializeObject<bool>(userExistResponseContent);
         if (userExist)
         {
             ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Info Summary", Detail = "User with this email address already exists", Duration = 4000 });
+            _disableRegisterButton = false;
         }
         else
         {
@@ -94,6 +97,7 @@
             else
             {
                 ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error Summary", Detail = "Something went wrong. Try again", Duration = 4000 });
+                _disableRegisterButton = false;
                 return;
             }
         }
