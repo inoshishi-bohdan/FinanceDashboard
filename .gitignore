@@ -362,3 +362,7 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /FinanceDashboard/Server/appsettings.Development.json
+/FinanceDashboard/Server/appsettings.Production.json
+/FinanceDashboard/Server/Properties/ServiceDependencies/FinanceDashboardServer - Web Deploy
+/FinanceDashboard/Server/Properties/serviceDependencies.FinanceDashboardServer - Web Deploy.json
+/FinanceDashboard/Server/Properties/serviceDependencies.json
