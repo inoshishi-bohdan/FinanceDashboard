@@ -24,9 +24,5 @@
     <ProjectReference Include="..\Shared\FinanceDashboard.Shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="SqlQueries\" />
-  </ItemGroup>
-
 
 </Project>

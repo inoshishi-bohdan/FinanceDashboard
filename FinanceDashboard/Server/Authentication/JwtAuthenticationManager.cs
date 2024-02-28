@@ -9,7 +9,7 @@ namespace FinanceDashboard.Server.Authentication
 {
     public class JwtAuthenticationManager
     {
-        public const string JWT_SECURITY_KEY = "yPasdfasui37OljKh2sul3sdSAsd4313gdXkt7F23HkdlP";
+        public static readonly string JWT_SECURITY_KEY = Environment.GetEnvironmentVariable("JWT_SECURITY_KEY")!;
         private const int   JWT_TOKEN_VALIDITY_MINS = 20;
         private readonly UserAccountService _userAccountService;
 
