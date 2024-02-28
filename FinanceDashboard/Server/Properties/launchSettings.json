@@ -15,7 +15,8 @@
       "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
       "applicationUrl": "https://localhost:7047;http://localhost:5080",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "JWT_SECURITY_KEY": "df2d4e6b3cd1ddc0ef09387d1af2aee3d86f8e4c6d11438d7eb622c229dc40dd"
       }
     },
     "IIS Express": {
@@ -23,7 +24,8 @@
       "launchBrowser": false,
       "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "JWT_SECURITY_KEY": "df2d4e6b3cd1ddc0ef09387d1af2aee3d86f8e4c6d11438d7eb622c229dc40dd"
       }
     }
   }
