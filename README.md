@@ -25,6 +25,9 @@ Finance Dashboard is a Blazor WebAssembly application designed to help users man
 
 Insert gif or link to demo
 
+## To try application:
+
+Use Login: admin@example.com and Password: admin or create your own account.
 
 ## Acknowledgements
 
