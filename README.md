@@ -16,9 +16,9 @@ Finance Dashboard is a Blazor WebAssembly application designed to help users man
 
 ## Tech Stack
 
-**Client:** Blazor WebAssembly 
+- **Client:** Blazor WebAssembly 
 
-**Server:** ASP.NET Core, Entity Framework Core, SQL Server
+- **Server:** ASP.NET Core, Entity Framework Core, SQL Server
 
 
 ## Demo
