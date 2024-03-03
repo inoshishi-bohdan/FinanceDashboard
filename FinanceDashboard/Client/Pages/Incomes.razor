@@ -66,84 +66,100 @@
 </div>
 
 <Table Responsive="true" DataSource="listOfData" TItem="IncomeData" RowClassName="@(_=>"editable-row")" Bordered TableLayout="fixed">
-     <ChildContent Context="data">
-         <PropertyColumn Property="c => c.Date" Title="Date" Sortable>
-            @if (!editCache[data.Id].edit)
+    <ChildContent Context="data">
+        <PropertyColumn Property="c => c.Date" Title="Date" Sortable>
+            @if (editCache.ContainsKey(data.Id))
             {
-                @data.Date.ToString("D")
-            }
-            else
-            {
-                <DatePicker TValue="DateTime" Picker="@DatePickerType.Date" @bind-Value="editCache[data.Id].data.Date" />
+                @if (!editCache[data.Id].edit)
+                {
+                    @data.Date.ToString("D")
+                }
+                else
+                {
+                    <DatePicker TValue="DateTime" Picker="@DatePickerType.Date" @bind-Value="editCache[data.Id].data.Date" />
+                }
             }
         </PropertyColumn>
         <PropertyColumn Property="c => c.Description" Title="Description">
-            @if (!editCache[data.Id].edit)
+            @if (editCache.ContainsKey(data.Id))
             {
-                @data.Description
-            }
-            else
-            {
-                <Input @bind-Value="editCache[data.Id].data.Description" />
+                @if (!editCache[data.Id].edit)
+                {
+                    @data.Description
+                }
+                else
+                {
+                    <Input @bind-Value="editCache[data.Id].data.Description" />
+                }
             }
         </PropertyColumn>
         <PropertyColumn Property="c => c.Amount" Title="Amount" Sortable>
-            @if (!editCache[data.Id].edit)
+            @if (editCache.ContainsKey(data.Id))
             {
-                @data.Amount.ToString("F2")
-            }
-            else
-            {
-                <Input @bind-Value="editCache[data.Id].data.Amount" />
+                @if (!editCache[data.Id].edit)
+                {
+                    @data.Amount.ToString("F2")
+                }
+                else
+                {
+                    <Input @bind-Value="editCache[data.Id].data.Amount" />
+                }
+
             }
         </PropertyColumn>
         <PropertyColumn Property="c => c.Currency" Title="Currency" Filters="_currencyFilters!" FilterMultiple="false"
                         OnFilter="(value,currency)=>currency!.StartsWith(value!)">
-            @if (!editCache[data.Id].edit)
+            @if (editCache.ContainsKey(data.Id))
             {
-                @data.Currency
-            }
-            else
-            {
-                <Select Mode="default"
-                        DataSource="currencies"
-                @bind-Value="editCache[data.Id].data.CurrencyId"
-                        LabelName="@nameof(Currency.Name)"
-                        ValueName="@nameof(Currency.Id)">
-                </Select>
+                @if (!editCache[data.Id].edit)
+                {
+                    @data.Currency
+                }
+                else
+                {
+                    <Select Mode="default"
+                            DataSource="currencies"
+                            @bind-Value="editCache[data.Id].data.CurrencyId"
+                            LabelName="@nameof(Currency.Name)"
+                            ValueName="@nameof(Currency.Id)">
+                    </Select>
+                }
             }
         </PropertyColumn>
         <ActionColumn Title="Action">
-            @if (!editCache[data.Id].edit)
+            @if (editCache.ContainsKey(data.Id))
             {
-                <div style="display: flex; align-items: flex-end;">
-                    <span class="material-symbols-outlined" @onclick="() => StartEdit(data.Id)">
-                        edit
+                @if (!editCache[data.Id].edit)
+                {
+                    <div style="display: flex; align-items: flex-end;">
+                        <span class="material-symbols-outlined" @onclick="() => StartEdit(data.Id)">
+                            edit
+                        </span>
+                        <Popconfirm Title="Sure to delete?"
+                                    OnConfirm="() => DeleteRecord(data.Id)"
+                                    OkText="Yes"
+                                    CancelText="No">
+                            <span class="material-symbols-outlined" style="margin-left: 5px;">
+                                delete
+                            </span>
+                        </Popconfirm>
+
+                    </div>
+                }
+                else
+                {
+                    <span class="material-symbols-outlined" @onclick="() => SaveEdit(data.Id)">
+                        done
                     </span>
-                    <Popconfirm Title="Sure to delete?"
-                                OnConfirm="() => DeleteRecord(data.Id)"
+                    <Popconfirm Title="Sure to cancel?"
+                                OnConfirm="() => CancelEdit(data.Id)"
                                 OkText="Yes"
                                 CancelText="No">
-                        <span class="material-symbols-outlined" style="margin-left: 5px;">
-                            delete
+                        <span class="material-symbols-outlined">
+                            close
                         </span>
                     </Popconfirm>
-
-                </div>
-            }
-            else
-            {
-                <span class="material-symbols-outlined" @onclick="() => SaveEdit(data.Id)">
-                    done
-                </span>
-                <Popconfirm Title="Sure to cancel?"
-                            OnConfirm="() => CancelEdit(data.Id)"
-                            OkText="Yes"
-                            CancelText="No">
-                    <span class="material-symbols-outlined">
-                        close
-                    </span>
-                </Popconfirm>
+                }
             }
         </ActionColumn>
     </ChildContent>
