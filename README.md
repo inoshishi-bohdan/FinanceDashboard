@@ -12,6 +12,7 @@ Finance Dashboard is a Blazor WebAssembly application designed to help users man
 
 - **Statistics Page:** Visualize your financial data with comprehensive graphs and charts, including income vs. expenses, net worth, and expense distribution.
 
+- **User Profile Management:** Easily modify your username and login credentials, reset your password, and personalize your profile image for a customized user experience.
 
 
 ## Tech Stack
